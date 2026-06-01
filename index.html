@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Redentor — Dashboard Redes Sociales</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Helvetica,Arial,sans-serif;background:#080f2a;color:#e8eaf6;min-height:100vh;font-size:14px}
+
+/* ── Layout ── */
+header{background:#0d1640;border-bottom:2px solid #c49a2a;padding:18px 32px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:17px;font-weight:700;letter-spacing:1.5px;color:#fff}
+header .gold{color:#c49a2a}
+.subtitle{font-size:11px;color:#8899cc;margin-top:3px}
+.tabs{display:flex;gap:4px;padding:20px 32px 0}
+.tab{padding:9px 20px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.5px;border:1px solid #1a2550;border-bottom:none;color:#8899cc;background:#0d1640;transition:all .2s}
+.tab.active{background:#14204e;color:#c49a2a;border-color:#c49a2a33}
+.tab-content{display:none;padding:20px 32px 32px;background:#0a1232;border-top:1px solid #c49a2a33}
+.tab-content.active{display:block}
+
+/* ── Cards ── */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.card{background:#0d1640;border:1px solid #1a2550;border-radius:12px;padding:18px 20px}
+.card h2{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#c49a2a;margin-bottom:14px}
+.card-accent{border-color:#c49a2a44}
+
+/* ── Metrics ── */
+.metric-big .val{font-size:36px;font-weight:700;color:#c49a2a;line-height:1}
+.metric-big .delta{font-size:12px;margin-top:4px}
+.delta.up{color:#4caf50}.delta.down{color:#ef5350}.delta.neutral{color:#8899cc}
+.metric-big .label{font-size:11px;color:#8899cc;margin-top:6px}
+
+/* ── Progress bars ── */
+.progress-row{margin:10px 0}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.progress-label .name{color:#c0cadd}
+.progress-label .val{color:#c49a2a;font-weight:600}
+.bar{height:6px;background:#1a2550;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a2a,#e8c96a);transition:width .8s ease}
+
+/* ── Calendar ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px}
+.cal-day{border-radius:8px;padding:8px 4px;text-align:center;font-size:11px;background:#0a1232;border:1px solid #1a2550;min-height:80px}
+.cal-day .dn{color:#8899cc;font-size:9px;text-transform:uppercase;margin-bottom:3px}
+.cal-day .dd{font-size:16px;font-weight:700;margin-bottom:4px}
+.cal-day.today{border-color:#c49a2a;background:#111830}
+.cal-day.has-auto{background:#0d1f0d;border-color:#2d7a2d55}
+.cal-day.has-manual{background:#0d1525;border-color:#2d5a9a55}
+.badge{font-size:8px;padding:2px 5px;border-radius:8px;display:block;margin:2px auto;text-align:center;max-width:90%}
+.b-auto{background:#1a3d1a;color:#7aff7a}
+.b-manual{background:#1a2d4a;color:#7ab4ff}
+.b-story{background:#2a1a3d;color:#c47aff}
+
+/* ── Schedule table ── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:#8899cc;font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:7px 10px;border-bottom:1px solid #1a2550;text-align:left}
+td{padding:9px 10px;border-bottom:1px solid #0d1232}
+tr:last-child td{border-bottom:none}
+.tag{font-size:9px;padding:3px 8px;border-radius:10px;display:inline-block}
+.tag-auto{background:#1a3d1a;color:#7aff7a}
+.tag-manual{background:#1a2d4a;color:#7ab4ff}
+.tag-done{background:#2a2010;color:#c49a2a}
+.tag-story{background:#2a1a3d;color:#c47aff}
+
+/* ── Stats inputs ── */
+.stat-input-group{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-input-group label{font-size:11px;color:#8899cc;display:block;margin-bottom:4px}
+.stat-input-group input{width:100%;background:#0a1232;border:1px solid #1a2550;border-radius:6px;padding:8px 10px;color:#e8eaf6;font-size:14px;outline:none}
+.stat-input-group input:focus{border-color:#c49a2a}
+.save-btn{background:#c49a2a;color:#080f2a;border:none;padding:9px 22px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+.save-btn:hover{background:#ddb83a}
+
+/* ── Recommendation box ── */
+.rec-box{background:#0a1520;border:1px solid #c49a2a44;border-radius:10px;padding:16px 18px;margin-top:12px}
+.rec-box .rec-title{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#c49a2a;margin-bottom:10px}
+.rec-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #0d1232;font-size:12px;line-height:1.5}
+.rec-item:last-child{border-bottom:none}
+.rec-icon{font-size:16px;flex-shrink:0}
+
+/* ── Checklist ── */
+.check-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #0d1232;align-items:flex-start}
+.check-item:last-child{border-bottom:none}
+.check-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;border:2px solid transparent}
+.check-dot.done{background:#c49a2a;border-color:#c49a2a}
+.check-dot.pending-auto{background:#1a3d1a;border-color:#2d7a2d;color:#7aff7a}
+.check-dot.pending-manual{background:#1a2d4a;border-color:#2d5a9a;color:#7ab4ff}
+.check-meta{font-size:10px;color:#c49a2a;margin-bottom:2px}
+.check-done-line{text-decoration:line-through;color:#8899cc}
+
+/* ── Platform cards ── */
+.platform-stat{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #0d1232}
+.platform-stat:last-child{border-bottom:none}
+.p-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.p-name{font-size:12px;font-weight:600}
+.p-meta{font-size:10px;color:#8899cc}
+.p-val{margin-left:auto;text-align:right}
+.p-val .num{font-size:18px;font-weight:700;color:#c49a2a}
+.p-val .target{font-size:10px;color:#8899cc}
+
+/* ── Automation legend ── */
+.auto-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #0d1232;font-size:12px;align-items:center}
+.auto-item:last-child{border-bottom:none}
+.auto-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── Trend mini chart ── */
+.mini-chart{display:flex;align-items:flex-end;gap:4px;height:48px;margin-top:8px}
+.bar-c{flex:1;background:#c49a2a;border-radius:3px 3px 0 0;opacity:.8;transition:height .5s;min-height:4px}
+
+.empty-state{text-align:center;padding:32px;color:#8899cc;font-size:13px}
+
+footer{padding:14px 32px;border-top:1px solid #1a2550;font-size:11px;color:#8899cc;display:flex;justify-content:space-between}
+</style>
+<script id="stats-data" type="application/json">{"fetched_at": "2026-06-01T04:20:44.251114+00:00", "instagram": {"followers": 259, "media_count": 24, "reach": 438, "accounts_engaged": null, "total_interactions": null, "recent_likes": 282, "recent_comments": 1, "posts": [{"id": "18114429583889052", "media_type": "VIDEO", "timestamp": "2026-05-31T15:03:55+0000", "like_count": 26, "comments_count": 1}, {"id": "18410765002198620", "media_type": "IMAGE", "timestamp": "2026-05-29T07:14:57+0000", "like_count": 10, "comments_count": 0}, {"id": "17928101961287709", "media_type": "VIDEO", "timestamp": "2026-05-19T16:42:05+0000", "like_count": 21, "comments_count": 0}, {"id": "17924469174123186", "media_type": "VIDEO", "timestamp": "2026-05-19T14:35:55+0000", "like_count": 28, "comments_count": 0}, {"id": "18048172472772175", "media_type": "VIDEO", "timestamp": "2026-05-19T14:31:55+0000", "like_count": 47, "comments_count": 0}], "followers_delta": 0}, "facebook": {"fans": 7649, "followers": 7649, "engagements": 1959, "reach_unique": 7021, "page_views": 1295, "video_views": 2952, "posts": [], "fans_delta": 0}, "youtube": {"subscribers": 993, "total_views": 125995, "shorts": [{"id": "REuOlHiljoM", "title": "Caer es permitido, levantarse es obligatorio #Shorts", "views": 8, "likes": 0}, {"id": "2May-qUxYjQ", "title": "Si no puedes volar, sigue avanzando #Shorts", "views": 52, "likes": 1}, {"id": "8NVbm7y-rd0", "title": "¿Qué cristiano no tiene luchas? #Shorts", "views": 40, "likes": 2}, {"id": "N6sZ4L10IP8", "title": "Quedarte viuda era sentencia de muerte #Shorts", "views": 68, "likes": 2}, {"id": "wBfrIndf-YQ", "title": "Dios maldecía a quien se aprovechara de viudas #Shorts", "views": 8, "likes": 1}, {"id": "gtDKGzOTBRU", "title": "El profeta se endeudó y destruyó a su familia #Shorts", "views": 16, "likes": 0}], "shorts_total_views": 192, "shorts_total_likes": 6, "subs_delta": 0}}</script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>TEMPLO EL REDENTOR <span class="gold">·</span> REDES SOCIALES</h1>
+    <div class="subtitle" id="week-label">Cargando semana...</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:10px;color:#8899cc">Última actualización</div>
+    <div style="font-size:12px;color:#c49a2a" id="last-updated"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('semana')">Esta Semana</div>
+  <div class="tab" onclick="showTab('estadisticas')">Estadísticas</div>
+  <div class="tab" onclick="showTab('estrategia')">Estrategia</div>
+  <div class="tab" onclick="showTab('automatizacion')">Automatización</div>
+</div>
+
+<!-- ══════════════════ TAB: ESTA SEMANA ══════════════════ -->
+<div class="tab-content active" id="tab-semana">
+  <div class="grid g2" style="margin-bottom:16px">
+
+    <!-- Calendario -->
+    <div class="card card-accent" style="grid-column:1/-1">
+      <h2>Calendario de publicaciones</h2>
+      <div class="cal-grid" id="calendar"></div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:10px;color:#8899cc">
+        <span><span style="color:#7aff7a">●</span> Automático (GitHub Actions)</span>
+        <span><span style="color:#7ab4ff">●</span> Manual tú</span>
+        <span><span style="color:#c47aff">●</span> Story (teléfono)</span>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="card">
+      <h2>Publicaciones de la semana</h2>
+      <table>
+        <thead><tr><th>Día</th><th>Contenido</th><th>Plataforma</th><th>Estado</th></tr></thead>
+        <tbody id="schedule-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Tu checklist -->
+    <div class="card">
+      <h2>Tu checklist — esta semana</h2>
+      <div id="checklist"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: ESTADÍSTICAS ══════════════════ -->
+<div class="tab-content" id="tab-estadisticas">
+  <div class="grid g2" style="margin-bottom:16px">
+
+        <!-- STATS_BLOCK_START -->
+<div class="card card-accent" style="grid-column:1/-1">
+  <h2>Estadísticas en vivo — <span style="font-weight:400;color:#8899cc;text-transform:none;letter-spacing:0">actualizado 2026-06-01 04:20 UTC</span></h2>
+  <div class="grid g3" style="margin-top:4px">
+    <div style="border-right:1px solid #1a2550;padding-right:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="background:#ff0000;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px">▶</div>
+        <span style="font-size:12px;font-weight:600">YouTube</span>
+      </div>
+      <div class="metric-big"><div class="val">993</div><div class="label">suscriptores</div></div>
+      <div style="margin-top:12px;font-size:11px;color:#8899cc">
+        <div>Vistas totales: <span style="color:#c49a2a">125,995</span></div>
+        <div style="margin-top:4px">Vistas Shorts semana: <span style="color:#c49a2a">192</span></div>
+      </div>
+    </div>
+    <div style="border-right:1px solid #1a2550;padding:0 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="background:#833ab4;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px">📷</div>
+        <span style="font-size:12px;font-weight:600">Instagram</span>
+      </div>
+      <div class="metric-big"><div class="val">259</div><div class="label">seguidores</div></div>
+      <div style="margin-top:12px;font-size:11px;color:#8899cc">
+        <div>Alcance semanal: <span style="color:#c49a2a">438</span></div>
+        <div style="margin-top:4px">Likes recientes: <span style="color:#c49a2a">282</span></div>
+      </div>
+    </div>
+    <div style="padding-left:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="background:#1877f2;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px">f</div>
+        <span style="font-size:12px;font-weight:600">Facebook</span>
+      </div>
+      <div class="metric-big"><div class="val">7,649</div><div class="label">fans</div></div>
+      <div style="margin-top:12px;font-size:11px;color:#8899cc">
+        <div>Alcance único: <span style="color:#c49a2a">7,021</span></div>
+        <div style="margin-top:4px">Video views: <span style="color:#c49a2a">2,952</span></div>
+        <div style="margin-top:4px">Engagements: <span style="color:#c49a2a">1,959</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>YouTube Shorts — rendimiento</h2>
+  <table><thead><tr><th>Título</th><th>Vistas</th><th>Likes</th></tr></thead><tbody>
+  <tr><td>Quedarte viuda era sentencia de muerte</td><td style="color:#c49a2a;font-weight:600">68</td><td>2</td></tr><tr><td>Si no puedes volar, sigue avanzando</td><td style="color:#c49a2a;font-weight:600">52</td><td>1</td></tr><tr><td>¿Qué cristiano no tiene luchas?</td><td style="color:#c49a2a;font-weight:600">40</td><td>2</td></tr><tr><td>El profeta se endeudó y destruyó a su familia</td><td style="color:#c49a2a;font-weight:600">16</td><td>0</td></tr><tr><td>Caer es permitido, levantarse es obligatorio</td><td style="color:#c49a2a;font-weight:600">8</td><td>0</td></tr><tr><td>Dios maldecía a quien se aprovechara de viuda</td><td style="color:#c49a2a;font-weight:600">8</td><td>1</td></tr>
+  </tbody></table>
+</div>
+
+<div class="card">
+  <h2>Instagram — posts recientes</h2>
+  <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Likes</th><th>Comentarios</th></tr></thead><tbody>
+  <tr><td>2026-05-31</td><td style="font-size:10px;color:#c49a2a">VIDEO</td><td style="color:#c49a2a;font-weight:600">26</td><td>1</td></tr><tr><td>2026-05-29</td><td style="font-size:10px;color:#c49a2a">IMAGE</td><td style="color:#c49a2a;font-weight:600">10</td><td>0</td></tr><tr><td>2026-05-19</td><td style="font-size:10px;color:#c49a2a">VIDEO</td><td style="color:#c49a2a;font-weight:600">21</td><td>0</td></tr><tr><td>2026-05-19</td><td style="font-size:10px;color:#c49a2a">VIDEO</td><td style="color:#c49a2a;font-weight:600">28</td><td>0</td></tr><tr><td>2026-05-19</td><td style="font-size:10px;color:#c49a2a">VIDEO</td><td style="color:#c49a2a;font-weight:600">47</td><td>0</td></tr>
+  </tbody></table>
+</div>
+<!-- STATS_BLOCK_END -->
+    <div class="card card-accent d-none" style="grid-column:1/-1">
+      <h2>Estadísticas en vivo — <span id="stats-fetched-at" style="font-weight:400;color:#8899cc;text-transform:none;letter-spacing:0">cargando...</span></h2>
+      <div class="grid g3" style="margin-top:4px">
+        <!-- YouTube -->
+        <div style="border-right:1px solid #1a2550;padding-right:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="p-icon" style="background:#ff0000;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px">▶</div>
+            <span style="font-size:12px;font-weight:600">YouTube</span>
+          </div>
+          <div class="metric-big"><div class="val" id="yt-subs">—</div><div class="label">suscriptores</div><div class="delta" id="yt-subs-delta"></div></div>
+          <div style="margin-top:12px;font-size:11px;color:#8899cc">
+            <div>Vistas totales: <span id="yt-views" style="color:#c49a2a">—</span></div>
+            <div style="margin-top:4px">Shorts esta semana: <span id="yt-short-views" style="color:#c49a2a">—</span> vistas</div>
+          </div>
+        </div>
+        <!-- Instagram -->
+        <div style="border-right:1px solid #1a2550;padding:0 16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="p-icon" style="background:#833ab4;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px">📷</div>
+            <span style="font-size:12px;font-weight:600">Instagram</span>
+          </div>
+          <div class="metric-big"><div class="val" id="ig-followers">—</div><div class="label">seguidores</div><div class="delta" id="ig-followers-delta"></div></div>
+          <div style="margin-top:12px;font-size:11px;color:#8899cc">
+            <div>Likes recientes: <span id="ig-likes" style="color:#c49a2a">—</span></div>
+            <div style="margin-top:4px">Comentarios: <span id="ig-comments" style="color:#c49a2a">—</span></div>
+          </div>
+        </div>
+        <!-- Facebook -->
+        <div style="padding-left:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="p-icon" style="background:#1877f2;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:circle;font-size:13px">f</div>
+            <span style="font-size:12px;font-weight:600">Facebook</span>
+          </div>
+          <div class="metric-big"><div class="val" id="fb-fans">—</div><div class="label">fans</div><div class="delta" id="fb-fans-delta"></div></div>
+          <div style="margin-top:12px;font-size:11px;color:#8899cc">
+            <div>Followers: <span id="fb-followers" style="color:#c49a2a">—</span></div>
+            <div style="margin-top:4px">Posts recientes: <span id="fb-posts" style="color:#c49a2a">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shorts YouTube detalle -->
+    <div class="card">
+      <h2>YouTube Shorts — rendimiento individual</h2>
+      <table><thead><tr><th>Título</th><th>Vistas</th><th>Likes</th></tr></thead>
+      <tbody id="shorts-table"></tbody></table>
+    </div>
+
+    <!-- Posts IG recientes -->
+    <div class="card">
+      <h2>Instagram — posts recientes</h2>
+      <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Likes</th><th>Comentarios</th></tr></thead>
+      <tbody id="ig-posts-table"></tbody></table>
+    </div>
+
+    <!-- Plataformas acumulado -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>Progreso vs objetivo mensual</h2>
+      <div id="platform-progress"></div>
+    </div>
+
+    <!-- Tendencia IG -->
+    <div class="card">
+      <h2>Tendencia seguidores Instagram</h2>
+      <div id="ig-trend-chart" class="mini-chart"></div>
+      <div id="ig-trend-labels" style="display:flex;gap:4px;margin-top:6px;font-size:9px;color:#8899cc"></div>
+    </div>
+
+    <!-- Tendencia YouTube -->
+    <div class="card">
+      <h2>Tendencia suscriptores YouTube</h2>
+      <div id="yt-trend-chart" class="mini-chart"></div>
+      <div id="yt-trend-labels" style="display:flex;gap:4px;margin-top:6px;font-size:9px;color:#8899cc"></div>
+    </div>
+
+    <!-- Semanas anteriores -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>Historial semanal</h2>
+      <table>
+        <thead><tr><th>Semana</th><th>IG Seguidores</th><th>FB Fans</th><th>YT Subs</th><th>Vistas Reels</th><th>Likes</th><th>Comentarios</th></tr></thead>
+        <tbody id="history-table"></tbody>
+      </table>
+      <div id="empty-history" class="empty-state" style="display:none">Los datos se actualizan automáticamente cada lunes via fetch_stats.py</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: ESTRATEGIA ══════════════════ -->
+<div class="tab-content" id="tab-estrategia">
+  <div class="grid g2" style="margin-bottom:16px">
+
+    <!-- Objetivos -->
+    <div class="card card-accent">
+      <h2>Objetivos de crecimiento mensual</h2>
+      <div class="platform-stat">
+        <div class="p-icon" style="background:#ff0000">▶</div>
+        <div><div class="p-name">YouTube</div><div class="p-meta">Estrategia: +CTAs en cada Reel → canal</div></div>
+        <div class="p-val"><div class="num" id="obj-yt">+100–200</div><div class="target">subs/mes</div></div>
+      </div>
+      <div class="platform-stat">
+        <div class="p-icon" style="background:#833ab4">📷</div>
+        <div><div class="p-name">Instagram</div><div class="p-meta">Estrategia: Reels + Carruseles + Stories</div></div>
+        <div class="p-val"><div class="num" id="obj-ig">+100–250</div><div class="target">seguidores/mes</div></div>
+      </div>
+      <div class="platform-stat">
+        <div class="p-icon" style="background:#1877f2">f</div>
+        <div><div class="p-name">Facebook</div><div class="p-meta">Estrategia: Cross-post automático de Reels</div></div>
+        <div class="p-val"><div class="num" id="obj-fb">+300–500</div><div class="target">fans/mes</div></div>
+      </div>
+    </div>
+
+    <!-- Recomendación basada en datos -->
+    <div class="card card-accent">
+      <h2>Recomendación para próxima semana</h2>
+      <div id="recommendations">
+        <div class="empty-state">Registra al menos 1 semana de estadísticas<br>para ver recomendaciones personalizadas.</div>
+      </div>
+    </div>
+
+    <!-- Mix de contenido -->
+    <div class="card">
+      <h2>Mix de contenido activo</h2>
+      <div style="font-size:12px;line-height:2;color:#c0cadd">
+        <div><span style="color:#c49a2a">2 Reels/semana</span> — Miércoles 1pm + Viernes 1pm CST</div>
+        <div><span style="color:#c49a2a">3 Stories/semana</span> — Lunes + Miércoles + Domingo</div>
+        <div><span style="color:#c49a2a">2 Carruseles/semana</span> — Jueves + Sábado (manual)</div>
+        <div><span style="color:#c49a2a">Clips ≤35s</span> — Preston style, frases completas</div>
+        <div><span style="color:#c49a2a">SEO</span> — Títulos optimizados ES + EN</div>
+        <div><span style="color:#c49a2a">Link YouTube</span> — En todos los captions</div>
+      </div>
+    </div>
+
+    <!-- Próxima semana -->
+    <div class="card">
+      <h2>Contenido de la próxima semana</h2>
+      <div id="next-week-content" style="font-size:12px;color:#c0cadd;line-height:2">
+        <div>📹 Clip de la Escuela Dominical más reciente</div>
+        <div>📹 Clip del Sermón más reciente</div>
+        <div>🖼 Carrusel: Frases de grandes cristianos</div>
+        <div>🖼 Carrusel: Pasajes bíblicos para el día</div>
+        <div>📱 3 Stories (Lun · Mié · Dom)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: AUTOMATIZACIÓN ══════════════════ -->
+<div class="tab-content" id="tab-automatizacion">
+  <div class="grid g2">
+    <div class="card">
+      <h2>Automatizado 100% — no necesitas hacer nada</h2>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Detección del video más reciente del canal YouTube</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Descarga automática del MP4 (hasta 1080p)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Extracción de audio y transcripción con Whisper AI</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Selección de los 3 mejores clips con Claude AI (HOOK + impacto)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Edición vertical 9:16 con seguimiento cinematográfico del pastor</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Subtítulos estilo Preston (MAYÚSCULAS, 95pt, máx 2 líneas)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Upload a Cloudinary (CDN para GitHub Actions)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Publicación automática en Instagram a la hora exacta</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Cross-post simultáneo en Facebook Page</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Captions con YouTube link + CTA personalizado por clip</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#4caf50"></div><div>Dashboard actualizado cada lunes 8am (rutina remota)</div></div>
+    </div>
+    <div class="card">
+      <h2>Lo que tú haces manualmente — 30 min/semana</h2>
+      <div class="auto-item"><div class="auto-dot" style="background:#c49a2a"></div><div><strong>Lunes 9am</strong> — Subir Story bíblica desde iPhone (iCloud → REDENTOR STORIES → story_lunes.jpg)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#c49a2a"></div><div><strong>Miércoles 12:30pm</strong> — Subir Story teaser (story_miercoles.jpg) antes del Reel automático</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#c49a2a"></div><div><strong>Jueves 1pm</strong> — Publicar carrusel "La predicación en puntos" en Instagram</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#c49a2a"></div><div><strong>Sábado 10am</strong> — Publicar carrusel de versículos bíblicos en Instagram</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#c49a2a"></div><div><strong>Domingo 8:30am</strong> — Subir Story de invitación al servicio (story_domingo.jpg)</div></div>
+      <div class="auto-item"><div class="auto-dot" style="background:#1877f2"></div><div><strong>Lunes (pipeline)</strong> — Después del servicio dominical: correr el pipeline en Claude Code para generar material de la semana siguiente</div></div>
+      <div style="margin-top:16px;padding:12px;background:#0a1232;border-radius:8px;font-size:11px;color:#8899cc;border-left:3px solid #c49a2a">
+        <strong style="color:#c49a2a">Limpieza automática:</strong> Corre <code>python3 weekly_cleanup.py</code> en Terminal cada lunes para eliminar archivos de semanas anteriores y mantener el proyecto ordenado.
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>V I P  social media analysis</span>
+  <span>Templo El Redentor · Chihuahua</span>
+</footer>
+
+<script>
+// ── Tab navigation ──────────────────────────────────────────────────
+function showTab(id){
+  document.querySelectorAll('.tab,.tab-content').forEach(el=>{
+    el.classList.remove('active')
+  })
+  document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active')
+  document.getElementById('tab-'+id).classList.add('active')
+  if(id==='estadisticas') renderStats()
+  if(id==='estrategia') renderRecommendations()
+}
+
+// ── Data ─────────────────────────────────────────────────────────────
+const SCHEDULE=[
+  {date:'2026-06-03',content:'Escuela Dominical — viuda sentencia de muerte',type:'reel',platform:'IG + FB',auto:true},
+  {date:'2026-06-03',content:'Story: Teaser del clip de hoy',type:'story',platform:'IG',auto:false},
+  {date:'2026-06-04',content:'Carrusel: Predicación en puntos',type:'carousel',platform:'IG',auto:false},
+  {date:'2026-06-05',content:'Sermón — Caer es permitido, levantarse obligatorio',type:'reel',platform:'IG + FB',auto:true},
+  {date:'2026-06-06',content:'Carrusel: Versículos para tu día',type:'carousel',platform:'IG',auto:false},
+  {date:'2026-06-07',content:'Story: Invitación al servicio (5pm)',type:'story',platform:'IG',auto:false},
+  {date:'2026-06-07',content:'Reel: Dios maldecía al que explota a viudas',type:'reel',platform:'IG + FB',auto:true},
+]
+const MANUAL=[
+  {day:'Lunes',time:'9:00 AM',desc:'Subir Story bíblica (story_lunes.jpg)',key:'mon-story'},
+  {day:'Miércoles',time:'12:30 PM',desc:'Subir Story teaser antes del Reel',key:'wed-story'},
+  {day:'Jueves',time:'1:00 PM',desc:'Publicar Carrusel predicación en puntos',key:'thu-carousel'},
+  {day:'Sábado',time:'10:00 AM',desc:'Publicar Carrusel versículos bíblicos',key:'sat-carousel'},
+  {day:'Domingo',time:'8:30 AM',desc:'Subir Story invitación al servicio',key:'sun-story'},
+]
+const OBJECTIVES={yt:{target:150,label:'subs/mes'},ig:{target:175,label:'seg/mes'},fb:{target:400,label:'fans/mes'}}
+
+function loadData(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch{return def}}
+function saveData(key,val){localStorage.setItem(key,JSON.stringify(val))}
+
+// ── Dates ────────────────────────────────────────────────────────────
+// Siempre usa componentes locales — nunca toISOString() que convierte a UTC
+function localDateStr(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function addDays(d,n){
+  const r=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  r.setDate(r.getDate()+n); return r;
+}
+
+// Semana a mostrar: siempre la semana que contiene la primera publicación
+// futura o actual del SCHEDULE (no depende de Date() del browser)
+function getDisplayMonday(){
+  const now=new Date();
+  const todayStr=localDateStr(now);
+
+  // Buscar la fecha más próxima del schedule (hoy o futuro)
+  const upcoming=SCHEDULE.map(s=>s.date).filter(d=>d>=todayStr).sort();
+  let anchor;
+  if(upcoming.length>0){
+    // Usar la primera fecha futura/actual
+    const parts=upcoming[0].split('-');
+    anchor=new Date(+parts[0],+parts[1]-1,+parts[2]);
+  } else {
+    anchor=now;
+  }
+
+  // Encontrar el lunes de esa semana
+  const day=anchor.getDay(); // 0=dom,1=lun,...6=sab
+  const daysBack=day===0?6:day-1;
+  return new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate()-daysBack);
+}
+
+function fmt(d){return d.toLocaleDateString('es-MX',{day:'numeric',month:'short'})}
+function weekKey(d){return localDateStr(d)}
+function getWeekRange(){
+  const mon=getDisplayMonday();
+  const sun=addDays(mon,6);
+  return `Semana del ${fmt(mon)} al ${fmt(sun)}, ${sun.getFullYear()}`
+}
+
+// ── Previous week helpers ─────────────────────────────────────────────
+function getPrevMonday(){
+  return addDays(getDisplayMonday(),-7);
+}
+function weekRangeLabel(mon){
+  const sun=addDays(mon,6);
+  return `${fmt(mon)} – ${fmt(sun)}, ${sun.getFullYear()}`;
+}
+
+// ── Week selector (stats form) ────────────────────────────────────────
+function buildWeekSelector(){
+  const sel=document.getElementById('week-selector');
+  sel.innerHTML='';
+  const history=loadData('history',[]);
+  const prevMon=getPrevMonday();
+  const weeks=new Set();
+  for(let i=0;i<8;i++) weeks.add(localDateStr(addDays(prevMon,-i*7)));
+  history.forEach(h=>weeks.add(h.week));
+  [...weeks].sort().reverse().forEach(wk=>{
+    const p=wk.split('-');
+    const mon=new Date(+p[0],+p[1]-1,+p[2]);
+    const opt=document.createElement('option');
+    opt.value=wk; opt.textContent=weekRangeLabel(mon);
+    if(wk===localDateStr(prevMon)) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  updateStatsLabel();
+  loadWeekIntoForm(localDateStr(prevMon));
+}
+function updateStatsLabel(){
+  const wk=document.getElementById('week-selector').value;
+  const p=wk.split('-');
+  document.getElementById('stats-week-label').textContent=
+    'Semana: '+weekRangeLabel(new Date(+p[0],+p[1]-1,+p[2]));
+}
+function onWeekChange(){updateStatsLabel();loadWeekIntoForm(document.getElementById('week-selector').value)}
+function loadWeekIntoForm(wk){
+  const e=loadData('history',[]).find(h=>h.week===wk)||{};
+  const map={ig_followers:'ig-followers',fb_fans:'fb-fans',yt_subs:'yt-subs',reel_views:'reel-views',
+    reel_likes:'reel-likes',story_reach:'story-reach',carousel_int:'carousel-int',comments:'comments'};
+  Object.entries(map).forEach(([k,id])=>{const el=document.getElementById('s-'+id);if(el)el.value=e[k]||''});
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+document.getElementById('week-label').textContent=getWeekRange()
+document.getElementById('last-updated').textContent=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})
+buildCalendar(); buildSchedule(); buildChecklist(); buildWeekSelector()
+
+// ── Calendar ─────────────────────────────────────────────────────────
+function buildCalendar(){
+  const days=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+  const now=new Date(); const cal=document.getElementById('calendar');
+  const mon=getDisplayMonday(); cal.innerHTML='';
+  const todayStr=localDateStr(now);
+  for(let i=0;i<7;i++){
+    const dt=addDays(mon,i);
+    const ds=localDateStr(dt);
+    const items=SCHEDULE.filter(s=>s.date===ds);
+    const isToday=ds===todayStr;
+    const hasAuto=items.some(s=>s.auto);
+    const hasManual=items.some(s=>!s.auto);
+    let cls='cal-day';
+    if(hasAuto) cls+=' has-auto'; else if(hasManual) cls+=' has-manual';
+    if(isToday) cls+=' today';
+    const div=document.createElement('div');div.className=cls;
+    div.innerHTML=`<div class="dn">${days[i]}</div><div class="dd">${dt.getDate()}</div>`;
+    items.forEach(item=>{
+      const bc=item.auto?'b-auto':item.type==='story'?'b-story':'b-manual';
+      const lbl=item.auto?'🤖 Auto':item.type==='story'?'📱 Story':'🖼 Manual';
+      div.innerHTML+=`<span class="badge ${bc}">${lbl}</span>`;
+    });
+    cal.appendChild(div);
+  }
+}
+
+// ── Schedule table ────────────────────────────────────────────────────
+function buildSchedule(){
+  const DAY_NAMES={
+    'Mon':'Lun','Tue':'Mar','Wed':'Mié','Thu':'Jue','Fri':'Vie','Sat':'Sáb','Sun':'Dom'
+  };
+  const tbody=document.getElementById('schedule-table');
+  tbody.innerHTML='';
+  SCHEDULE.forEach(item=>{
+    const dt=new Date(item.date+'T12:00:00');
+    const dayName=dt.toLocaleDateString('es-MX',{weekday:'short'});
+    const dateStr=dt.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+    const tag=item.auto?'<span class="tag tag-auto">🤖 Auto</span>':
+               item.type==='story'?'<span class="tag tag-story">📱 Story</span>':
+               '<span class="tag tag-manual">👤 Manual</span>';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>${dayName} ${dateStr}</strong></td><td>${item.content}</td><td style="font-size:10px;color:#c49a2a">${item.platform}</td><td>${tag}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Checklist ─────────────────────────────────────────────────────────
+function buildChecklist(){
+  const checks=loadData('checks-'+weekKey(new Date()),{});
+  const el=document.getElementById('checklist');el.innerHTML='';
+  MANUAL.forEach(item=>{
+    const done=checks[item.key];
+    const div=document.createElement('div');div.className='check-item';
+    div.innerHTML=`
+      <div class="check-dot ${done?'done':'pending-manual'}" onclick="toggleCheck('${item.key}',this)">
+        ${done?'✓':''}
+      </div>
+      <div class="check-text">
+        <div class="check-meta">${item.day} · ${item.time}</div>
+        <div class="${done?'check-done-line':''}">${item.desc}</div>
+      </div>`;
+    el.appendChild(div);
+  });
+  // Auto items
+  SCHEDULE.filter(s=>s.auto).forEach(item=>{
+    const dt=new Date(item.date+'T12:00:00');
+    const dateStr=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+    const div=document.createElement('div');div.className='check-item';
+    div.innerHTML=`
+      <div class="check-dot pending-auto">🤖</div>
+      <div class="check-text">
+        <div class="check-meta">${dateStr} · 1:00 PM CST</div>
+        <div style="color:#8899cc">${item.content} — automático</div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function toggleCheck(key,el){
+  const checks=loadData('checks-'+weekKey(new Date()),{});
+  checks[key]=!checks[key];
+  saveData('checks-'+weekKey(new Date()),checks);
+  buildChecklist();
+}
+
+// ── Save stats ────────────────────────────────────────────────────────
+function saveStats(){
+  const wk=document.getElementById('week-selector').value;
+  const history=loadData('history',[]);
+  const entry={
+    week:wk,
+    label:getWeekRange(),
+    ig_followers:+document.getElementById('s-ig-followers').value||0,
+    fb_fans:+document.getElementById('s-fb-fans').value||0,
+    yt_subs:+document.getElementById('s-yt-subs').value||0,
+    reel_views:+document.getElementById('s-reel-views').value||0,
+    reel_likes:+document.getElementById('s-reel-likes').value||0,
+    story_reach:+document.getElementById('s-story-reach').value||0,
+    carousel_int:+document.getElementById('s-carousel-int').value||0,
+    comments:+document.getElementById('s-comments').value||0,
+  };
+  const idx=history.findIndex(h=>h.week===wk);
+  if(idx>=0) history[idx]=entry; else history.push(entry);
+  history.sort((a,b)=>a.week.localeCompare(b.week));
+  saveData('history',history);
+  document.getElementById('save-msg').textContent='✅ Guardado — '+new Date().toLocaleTimeString('es-MX');
+  renderStats(); renderRecommendations();
+}
+
+// ── Render stats ──────────────────────────────────────────────────────
+function renderStats(){
+  const history=loadData('history',[]);
+  // Platform progress
+  const totalIg=history.reduce((a,h)=>a+h.ig_followers,0);
+  const totalFb=history.reduce((a,h)=>a+h.fb_fans,0);
+  const totalYt=history.reduce((a,h)=>a+h.yt_subs,0);
+  const pp=document.getElementById('platform-progress');
+  pp.innerHTML=`
+    ${progressRow('YouTube','▶','#ff0000',totalYt,OBJECTIVES.yt.target*4,'subs acumulados')}
+    ${progressRow('Instagram','📷','#833ab4',totalIg,OBJECTIVES.ig.target*4,'seguidores acumulados')}
+    ${progressRow('Facebook','f','#1877f2',totalFb,OBJECTIVES.fb.target*4,'fans acumulados')}
+  `;
+  // Trend charts
+  const last6=history.slice(-6);
+  renderTrendChart('ig-trend-chart','ig-trend-labels',last6.map(h=>h.ig_followers),last6.map(h=>h.week.slice(5)));
+  renderTrendChart('yt-trend-chart','yt-trend-labels',last6.map(h=>h.yt_subs),last6.map(h=>h.week.slice(5)));
+  // History table
+  const tbody=document.getElementById('history-table');
+  const empty=document.getElementById('empty-history');
+  if(history.length===0){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=[...history].reverse().map(h=>`
+    <tr>
+      <td>${h.label.replace('Semana del ','').slice(0,20)}</td>
+      <td style="color:${h.ig_followers>=50?'#4caf50':'#c49a2a'}">+${h.ig_followers}</td>
+      <td style="color:${h.fb_fans>=100?'#4caf50':'#c49a2a'}">+${h.fb_fans}</td>
+      <td style="color:${h.yt_subs>=25?'#4caf50':'#c49a2a'}">+${h.yt_subs}</td>
+      <td>${h.reel_views.toLocaleString()}</td>
+      <td>${h.reel_likes}</td>
+      <td>${h.comments}</td>
+    </tr>`).join('');
+}
+
+function progressRow(name,icon,color,val,target,label){
+  const pct=Math.min(100,Math.round(val/target*100));
+  return `<div class="progress-row">
+    <div class="progress-label">
+      <span class="name"><span style="color:${color}">${icon}</span> ${name} — ${label}</span>
+      <span class="val">+${val}</span>
+    </div>
+    <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:10px;color:#8899cc;margin-top:3px">${pct}% del objetivo mensual · meta: +${target}</div>
+  </div>`;
+}
+
+function renderTrendChart(chartId,labelId,values,labels){
+  const chart=document.getElementById(chartId);
+  const lbl=document.getElementById(labelId);
+  if(!values.length){chart.innerHTML='<div style="color:#8899cc;font-size:12px;padding:14px 0">Sin datos aún</div>';return;}
+  const max=Math.max(...values,1);
+  chart.innerHTML=values.map(v=>`<div class="bar-c" style="height:${Math.round(v/max*100)}%"></div>`).join('');
+  lbl.innerHTML=labels.map(l=>`<div style="flex:1;text-align:center">${l}</div>`).join('');
+}
+
+// ── Recommendations ───────────────────────────────────────────────────
+function renderRecommendations(){
+  const history=loadData('history',[]);
+  const el=document.getElementById('recommendations');
+  if(history.length===0){
+    el.innerHTML='<div class="empty-state">Registra al menos 1 semana de estadísticas<br>para ver recomendaciones personalizadas.</div>';
+    return;
+  }
+  const last=history[history.length-1];
+  const prev=history.length>1?history[history.length-2]:null;
+  const recs=[];
+
+  // Análisis de Reels
+  const avgViews=history.reduce((a,h)=>a+h.reel_views,0)/history.length;
+  if(last.reel_views>avgViews*1.2) recs.push({icon:'🚀',text:`Los Reels esta semana tuvieron ${Math.round((last.reel_views/avgViews-1)*100)}% más vistas que el promedio. <strong>Mantén el mismo tipo de hook</strong> — funciona.`});
+  else if(last.reel_views<avgViews*0.8) recs.push({icon:'⚡',text:`Las vistas bajaron vs el promedio (${last.reel_views.toLocaleString()} vs ${Math.round(avgViews).toLocaleString()}). <strong>Prueba un hook más directo</strong> los primeros 3 segundos.`});
+
+  // Crecimiento IG
+  if(prev&&last.ig_followers>prev.ig_followers*1.3) recs.push({icon:'📈',text:`Instagram creció <strong>${Math.round((last.ig_followers/prev.ig_followers-1)*100)}% más</strong> que la semana anterior. Los carruseles y stories están funcionando.`});
+  else if(last.ig_followers<30) recs.push({icon:'🖼',text:`Seguidores IG por debajo de lo esperado. <strong>Publica el carrusel de frases en horario pico</strong> (jue 12-2pm o sáb 10am) y añade encuesta en Stories.`});
+
+  // YouTube
+  if(last.yt_subs<20) recs.push({icon:'▶',text:`YouTube necesita impulso. <strong>Añade un CTA verbal en el Reel</strong>: "Suscríbete para ver la predicación completa" — aumenta conversión 15-30%.`});
+
+  // Comments engagement
+  if(last.comments<10) recs.push({icon:'💬',text:`Pocos comentarios esta semana. <strong>Termina el caption con una pregunta directa</strong> relacionada al clip — los comentarios aumentan el alcance orgánico.`});
+
+  // Facebook
+  if(last.fb_fans<50) recs.push({icon:'📘',text:`Facebook creció menos de lo esperado. Verifica que el <strong>cross-post automático esté funcionando</strong> revisando el schedule.json en GitHub.`});
+
+  // Default si va bien
+  if(recs.length===0) recs.push({icon:'✅',text:'Todo está dentro de parámetros. <strong>Sigue con la estrategia actual</strong> — consistencia es clave para el algoritmo.'},{icon:'💡',text:'Para crecer más rápido: considera <strong>colaborar con otro pastor/ministro</strong> en un Reel conjunto (alcance compartido).'});
+
+  // Próxima semana
+  recs.push({icon:'📅',text:'Esta semana: prioriza subir las <strong>Stories manualmente</strong> — son las que construyen relación directa con la congregación digital.'});
+
+  el.innerHTML=recs.map(r=>`<div class="rec-item"><div class="rec-icon">${r.icon}</div><div>${r.text}</div></div>`).join('');
+  el.className='rec-box';
+}
+
+// ── Load live stats — usa LIVE_STATS inyectado por fetch_stats.py ────
+async function loadLiveStats(){
+  try{
+    const el = document.getElementById('stats-data');
+    if(!el){showStatsUnavailable();return;}
+    const s = JSON.parse(el.textContent);
+    const yt = s.youtube||{}, ig = s.instagram||{}, fb = s.facebook||{};
+
+    // Header timestamp
+    const ts = s.fetched_at?s.fetched_at.replace('T',' ').slice(0,16)+' UTC':'—';
+    document.getElementById('stats-fetched-at').textContent = 'actualizado ' + ts;
+
+    // YouTube
+    document.getElementById('yt-subs').textContent = (yt.subscribers||0).toLocaleString();
+    document.getElementById('yt-views').textContent = (yt.total_views||0).toLocaleString();
+    document.getElementById('yt-short-views').textContent = (yt.shorts_total_views||0).toLocaleString();
+    const ytDelta = yt.subs_delta||0;
+    const ytDeltaEl = document.getElementById('yt-subs-delta');
+    ytDeltaEl.textContent = (ytDelta>=0?'+':'')+ytDelta+' vs semana anterior';
+    ytDeltaEl.className = 'delta '+(ytDelta>0?'up':ytDelta<0?'down':'neutral');
+
+    // Instagram
+    document.getElementById('ig-followers').textContent = (ig.followers||0).toLocaleString();
+    document.getElementById('ig-likes').textContent = (ig.recent_likes||0).toLocaleString();
+    document.getElementById('ig-comments').textContent = (ig.recent_comments||0).toLocaleString();
+    const igDelta = ig.followers_delta||0;
+    const igDeltaEl = document.getElementById('ig-followers-delta');
+    igDeltaEl.textContent = (igDelta>=0?'+':'')+igDelta+' vs semana anterior';
+    igDeltaEl.className = 'delta '+(igDelta>0?'up':igDelta<0?'down':'neutral');
+
+    // Facebook
+    document.getElementById('fb-fans').textContent = (fb.fans||0).toLocaleString();
+    document.getElementById('fb-followers').textContent = (fb.followers||0).toLocaleString();
+    document.getElementById('fb-posts').textContent = (fb.posts||[]).length;
+    const fbDelta = fb.fans_delta||0;
+    const fbDeltaEl = document.getElementById('fb-fans-delta');
+    fbDeltaEl.textContent = (fbDelta>=0?'+':'')+fbDelta+' vs semana anterior';
+    fbDeltaEl.className = 'delta '+(fbDelta>0?'up':fbDelta<0?'down':'neutral');
+
+    // Shorts table
+    const stb = document.getElementById('shorts-table');
+    stb.innerHTML = (yt.shorts||[]).sort((a,b)=>b.views-a.views).map(s=>`
+      <tr><td>${s.title.replace(' #Shorts','')}</td>
+          <td style="color:#c49a2a;font-weight:600">${s.views.toLocaleString()}</td>
+          <td>${s.likes}</td></tr>`).join('');
+
+    // IG posts table
+    const igtb = document.getElementById('ig-posts-table');
+    igtb.innerHTML = (ig.posts||[]).map(p=>`
+      <tr><td>${p.timestamp?p.timestamp.slice(0,10):'—'}</td>
+          <td style="font-size:10px;color:#c49a2a">${p.media_type||'—'}</td>
+          <td style="color:#c49a2a;font-weight:600">${p.like_count||0}</td>
+          <td>${p.comments_count||0}</td></tr>`).join('');
+
+    // Progress vs monthly target (based on live followers)
+    const pp = document.getElementById('platform-progress');
+    const TARGET_MONTHLY = {yt:150, ig:175, fb:400};
+    const weeks_in = 1; // adjust based on week of month
+    pp.innerHTML = [
+      {name:'YouTube',icon:'▶',color:'#ff0000',val:yt.subs_delta||0,target:TARGET_MONTHLY.yt},
+      {name:'Instagram',icon:'📷',color:'#833ab4',val:ig.followers_delta||0,target:TARGET_MONTHLY.ig},
+      {name:'Facebook',icon:'f',color:'#1877f2',val:fb.fans_delta||0,target:TARGET_MONTHLY.fb},
+    ].map(p=>progressRow(p.name,p.icon,p.color,p.val,p.target,'esta semana')).join('');
+
+  } catch(e){
+    showStatsUnavailable();
+    console.error(e);
+  }
+}
+
+function showStatsUnavailable(){
+  document.getElementById('stats-fetched-at').textContent = 'sin datos — corre: python3 fetch_stats.py';
+  document.getElementById('yt-subs').textContent='—';
+  document.getElementById('ig-followers').textContent='—';
+  document.getElementById('fb-fans').textContent='—';
+}
+
+// Init stats on load
+renderStats();
+loadLiveStats();
+</script>
+</body>
+</html>
