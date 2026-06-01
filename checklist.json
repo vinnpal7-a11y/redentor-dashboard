@@ -1,0 +1,11 @@
+{
+  "week": "",
+  "tasks": {
+    "mon-story": false,
+    "wed-story": false,
+    "thu-carousel": false,
+    "sat-carousel": false,
+    "sun-story": false
+  },
+  "updated_at": ""
+}
