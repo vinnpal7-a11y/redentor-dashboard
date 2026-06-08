@@ -468,6 +468,7 @@ function weekRangeLabel(mon){
 // ── Week selector (stats form) ────────────────────────────────────────
 function buildWeekSelector(){
   const sel=document.getElementById('week-selector');
+  if(!sel) return; // elemento opcional — no detener el init si no existe
   sel.innerHTML='';
   const history=loadData('history',[]);
   const prevMon=getPrevMonday();
@@ -500,9 +501,12 @@ function loadWeekIntoForm(wk){
 }
 
 // ── Init ─────────────────────────────────────────────────────────────
-document.getElementById('week-label').textContent=getWeekRange()
-document.getElementById('last-updated').textContent=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})
-buildCalendar(); buildSchedule(); buildChecklist(); buildWeekSelector()
+try{document.getElementById('week-label').textContent=getWeekRange()}catch(e){}
+try{document.getElementById('last-updated').textContent=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}catch(e){}
+try{buildCalendar()}catch(e){console.warn('buildCalendar:',e)}
+try{buildSchedule()}catch(e){console.warn('buildSchedule:',e)}
+try{buildChecklist()}catch(e){console.warn('buildChecklist:',e)}
+try{buildWeekSelector()}catch(e){console.warn('buildWeekSelector:',e)}
 
 // ── Calendar ─────────────────────────────────────────────────────────
 function buildCalendar(){
