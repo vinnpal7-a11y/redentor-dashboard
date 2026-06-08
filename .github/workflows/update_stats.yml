@@ -43,7 +43,27 @@ jobs:
           YT_CH      = os.environ['YT_CHANNEL_ID']
           YT_KEY     = os.environ.get('YT_API_KEY','')
 
-          stats = {'fetched_at': datetime.now(timezone.utc).isoformat()}
+          # ── Leer baseline de la semana anterior desde el index.html actual ──
+          with open('index.html') as f:
+              old_html = f.read()
+          old_m = re.search(r'<script id="stats-data" type="application/json">(.*?)</script>', old_html, re.DOTALL)
+          prev_week = {}
+          if old_m:
+              try:
+                  old_stats = json.loads(old_m.group(1))
+                  yt_old = old_stats.get('youtube', {})
+                  ig_old = old_stats.get('instagram', {})
+                  fb_old = old_stats.get('facebook', {})
+                  prev_week = {
+                      'yt_subs':      yt_old.get('subscribers', 0),
+                      'ig_followers': ig_old.get('followers', 0),
+                      'fb_fans':      fb_old.get('fans', 0),
+                  }
+                  print(f"Baseline anterior: {prev_week}")
+              except Exception as e:
+                  print(f"Baseline error: {e}")
+
+          stats = {'fetched_at': datetime.now(timezone.utc).isoformat(), 'prev_week': prev_week}
 
           # ── Instagram ──
           try:
@@ -58,13 +78,14 @@ jobs:
                   timeout=10
               ).json()
               posts = posts_r.get('data',[])
+              ig_followers = ig.get('followers_count',0)
               stats['instagram'] = {
-                  'followers':      ig.get('followers_count',0),
-                  'media_count':    ig.get('media_count',0),
-                  'recent_likes':   sum(p.get('like_count',0) for p in posts),
-                  'recent_comments':sum(p.get('comments_count',0) for p in posts),
-                  'posts':          posts,
-                  'followers_delta':0,
+                  'followers':       ig_followers,
+                  'media_count':     ig.get('media_count',0),
+                  'recent_likes':    sum(p.get('like_count',0) for p in posts),
+                  'recent_comments': sum(p.get('comments_count',0) for p in posts),
+                  'posts':           posts,
+                  'followers_delta': ig_followers - prev_week.get('ig_followers', ig_followers),
               }
               print(f"IG: {ig.get('followers_count')} seguidores")
           except Exception as e:
@@ -78,10 +99,11 @@ jobs:
                   params={'fields':'fan_count,followers_count','access_token':PAGE_TOKEN},
                   timeout=10
               ).json()
+              fb_fans = fb.get('fan_count',0)
               stats['facebook'] = {
-                  'fans':      fb.get('fan_count',0),
-                  'followers': fb.get('followers_count',0),
-                  'fans_delta':0,
+                  'fans':       fb_fans,
+                  'followers':  fb.get('followers_count',0),
+                  'fans_delta': fb_fans - prev_week.get('fb_fans', fb_fans),
               }
               print(f"FB: {fb.get('fan_count')} fans")
           except Exception as e:
@@ -118,7 +140,7 @@ jobs:
                       'shorts':            shorts,
                       'shorts_total_views':sum(s['views'] for s in shorts),
                       'shorts_total_likes':sum(s['likes'] for s in shorts),
-                      'subs_delta':        0,
+                      'subs_delta':        subs - prev_week.get('yt_subs', subs),
                   }
                   print(f"YT: {subs} subs (API key)")
               else:
@@ -138,11 +160,47 @@ jobs:
           with open('index.html') as f:
               html = f.read()
 
+          # Actualizar stats-data
           new_tag = f'<script id="stats-data" type="application/json">{json.dumps(stats, ensure_ascii=False)}</script>'
           html = re.sub(
               r'<script id="stats-data" type="application/json">.*?</script>',
               new_tag, html, flags=re.DOTALL
           )
+
+          # Actualizar history-data — añadir entrada de la semana anterior
+          hist_m = re.search(r'<script id="history-data" type="application/json">(.*?)</script>', html, re.DOTALL)
+          if hist_m and prev_week:
+              history = json.loads(hist_m.group(1))
+              from datetime import datetime as dt2, timedelta
+              # Lunes de la semana anterior
+              today = dt2.now(timezone.utc)
+              last_mon = today - timedelta(days=today.weekday()+7)
+              week_key = last_mon.strftime('%Y-%m-%d')
+              yt_now  = stats.get('youtube',{}).get('subscribers',0)
+              ig_now  = stats.get('instagram',{}).get('followers',0)
+              fb_now  = stats.get('facebook',{}).get('fans',0)
+              new_entry = {
+                  'week':        week_key,
+                  'ig_followers':ig_now - prev_week.get('ig_followers',ig_now),
+                  'fb_fans':     fb_now - prev_week.get('fb_fans',fb_now),
+                  'yt_subs':     yt_now - prev_week.get('yt_subs',yt_now),
+                  'reel_views':  stats.get('youtube',{}).get('shorts_total_views',0),
+                  'ig_total':    ig_now,
+                  'fb_total':    fb_now,
+                  'yt_total':    yt_now,
+              }
+              if not any(h['week']==week_key for h in history):
+                  history.append(new_entry)
+                  history.sort(key=lambda h: h['week'])
+                  new_hist = f'<script id="history-data" type="application/json">{json.dumps(history, ensure_ascii=False)}</script>'
+                  html = re.sub(
+                      r'<script id="history-data" type="application/json">.*?</script>',
+                      new_hist, html, flags=re.DOTALL
+                  )
+                  print(f"✅ history-data: entrada {week_key} añadida — {new_entry}")
+              else:
+                  print(f"ℹ️  history-data: semana {week_key} ya existe")
+
           with open('index.html', 'w') as f:
               f.write(html)
           print(f"✅ index.html actualizado — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
