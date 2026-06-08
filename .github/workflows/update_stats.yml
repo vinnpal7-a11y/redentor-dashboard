@@ -1,0 +1,161 @@
+name: Actualizar estadísticas — cada lunes
+
+on:
+  schedule:
+    - cron: '0 16 * * 1'   # Lunes 10am CST (16:00 UTC)
+  workflow_dispatch:        # También se puede correr manualmente
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Obtener stats y actualizar index.html
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_PAGE_TOKEN:   ${{ secrets.META_PAGE_TOKEN }}
+          META_PAGE_ID:      "532062283670945"
+          META_IG_ACCOUNT:   "17841456697845516"
+          YT_CHANNEL_ID:     "UCP5sDBKbgBZnBiwvw_ZC9RA"
+          YT_API_KEY:        ${{ secrets.YT_API_KEY }}
+        run: |
+          python3 - << 'EOF'
+          import os, json, re, requests
+          from datetime import datetime, timezone
+
+          USER_TOKEN = os.environ['META_ACCESS_TOKEN']
+          PAGE_TOKEN = os.environ['META_PAGE_TOKEN']
+          PAGE_ID    = os.environ['META_PAGE_ID']
+          IG_ACCT    = os.environ['META_IG_ACCOUNT']
+          YT_CH      = os.environ['YT_CHANNEL_ID']
+          YT_KEY     = os.environ.get('YT_API_KEY','')
+
+          stats = {'fetched_at': datetime.now(timezone.utc).isoformat()}
+
+          # ── Instagram ──
+          try:
+              ig = requests.get(
+                  f'https://graph.facebook.com/v19.0/{IG_ACCT}',
+                  params={'fields':'followers_count,media_count','access_token':USER_TOKEN},
+                  timeout=10
+              ).json()
+              posts_r = requests.get(
+                  f'https://graph.facebook.com/v19.0/{IG_ACCT}/media',
+                  params={'fields':'id,media_type,timestamp,like_count,comments_count','limit':5,'access_token':USER_TOKEN},
+                  timeout=10
+              ).json()
+              posts = posts_r.get('data',[])
+              stats['instagram'] = {
+                  'followers':      ig.get('followers_count',0),
+                  'media_count':    ig.get('media_count',0),
+                  'recent_likes':   sum(p.get('like_count',0) for p in posts),
+                  'recent_comments':sum(p.get('comments_count',0) for p in posts),
+                  'posts':          posts,
+                  'followers_delta':0,
+              }
+              print(f"IG: {ig.get('followers_count')} seguidores")
+          except Exception as e:
+              print(f"IG error: {e}")
+              stats['instagram'] = {}
+
+          # ── Facebook ──
+          try:
+              fb = requests.get(
+                  f'https://graph.facebook.com/v19.0/{PAGE_ID}',
+                  params={'fields':'fan_count,followers_count','access_token':PAGE_TOKEN},
+                  timeout=10
+              ).json()
+              stats['facebook'] = {
+                  'fans':      fb.get('fan_count',0),
+                  'followers': fb.get('followers_count',0),
+                  'fans_delta':0,
+              }
+              print(f"FB: {fb.get('fan_count')} fans")
+          except Exception as e:
+              print(f"FB error: {e}")
+              stats['facebook'] = {}
+
+          # ── YouTube (API Key para datos públicos) ──
+          try:
+              if YT_KEY:
+                  ch = requests.get(
+                      'https://www.googleapis.com/youtube/v3/channels',
+                      params={'part':'statistics','id':YT_CH,'key':YT_KEY},
+                      timeout=10
+                  ).json()
+                  yt_st = ch['items'][0]['statistics']
+                  subs  = int(yt_st.get('subscriberCount',0))
+                  views = int(yt_st.get('viewCount',0))
+
+                  # Shorts recientes (IDs hardcodeados — se actualizan con el pipeline semanal)
+                  short_ids = ['VmVWoWqHbEA','d7Be9nfBANU','WYEFrEBaGVY','v8c5AD0C7jc','-NOYisLSkT4','v_LCM4q6I30']
+                  sv = requests.get(
+                      'https://www.googleapis.com/youtube/v3/videos',
+                      params={'part':'statistics,snippet','id':','.join(short_ids),'key':YT_KEY},
+                      timeout=10
+                  ).json()
+                  shorts = [{'id':i['id'],
+                             'title':i['snippet']['title'].replace(' #Shorts',''),
+                             'views':int(i['statistics'].get('viewCount',0)),
+                             'likes':int(i['statistics'].get('likeCount',0))}
+                            for i in sv.get('items',[])]
+                  stats['youtube'] = {
+                      'subscribers':       subs,
+                      'total_views':       views,
+                      'shorts':            shorts,
+                      'shorts_total_views':sum(s['views'] for s in shorts),
+                      'shorts_total_likes':sum(s['likes'] for s in shorts),
+                      'subs_delta':        0,
+                  }
+                  print(f"YT: {subs} subs (API key)")
+              else:
+                  print("YT: sin API key — manteniendo datos anteriores")
+                  # Leer stats actuales y mantener YT
+                  with open('index.html') as f:
+                      existing = f.read()
+                  m = re.search(r'<script id="stats-data" type="application/json">(.*?)</script>', existing, re.DOTALL)
+                  if m:
+                      old = json.loads(m.group(1))
+                      stats['youtube'] = old.get('youtube', {})
+          except Exception as e:
+              print(f"YT error: {e}")
+              stats['youtube'] = {}
+
+          # ── Inyectar en index.html ──
+          with open('index.html') as f:
+              html = f.read()
+
+          new_tag = f'<script id="stats-data" type="application/json">{json.dumps(stats, ensure_ascii=False)}</script>'
+          html = re.sub(
+              r'<script id="stats-data" type="application/json">.*?</script>',
+              new_tag, html, flags=re.DOTALL
+          )
+          with open('index.html', 'w') as f:
+              f.write(html)
+          print(f"✅ index.html actualizado — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+          EOF
+
+      - name: Commit y push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --staged --quiet; then
+            echo "Sin cambios en stats."
+          else
+            git commit -m "Stats actualizados $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
