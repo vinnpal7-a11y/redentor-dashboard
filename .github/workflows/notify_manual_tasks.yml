@@ -1,0 +1,57 @@
+name: Recordatorios semanales — tareas manuales
+
+on:
+  schedule:
+    # Todos los horarios en UTC (Chihuahua = UTC-6)
+    - cron: '0 15 * * 1'    # Lunes    9:00 AM CST  → Story lunes
+    - cron: '30 18 * * 3'   # Miércoles 12:30 PM CST → Story miércoles
+    - cron: '0 19 * * 4'    # Jueves   1:00 PM CST  → Carrusel predicación
+    - cron: '0 16 * * 6'    # Sábado   10:00 AM CST → Carrusel versículos
+    - cron: '30 14 * * 0'   # Domingo  8:30 AM CST  → Story domingo
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Tarea a notificar manualmente'
+        required: false
+        default: 'test'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detectar qué tarea toca hoy
+        id: task
+        run: |
+          DOW=$(date -u +%u)  # 1=Lun, 3=Mié, 4=Jue, 6=Sáb, 7=Dom
+          HOUR=$(date -u +%H)
+          case "$DOW" in
+            1) SUBJECT="📱 Redentor — Subir Story de hoy (Lunes)"
+               BODY="Hola! Es lunes 9am.\n\n📌 TAREA: Subir Story bíblica en Instagram\n\n📁 Archivo: story_lunes.jpg\n   (iCloud → EXP CREATIVE → EXP VIP → REDENTOR REDES → stories_semana_2_junio_2026)\n\n✅ Los Reels de hoy ya se publicaron automáticamente en IG, FB y YouTube.\n\n📊 Dashboard: https://vinnpal7-a11y.github.io/redentor-dashboard/" ;;
+            3) SUBJECT="📱 Redentor — Story teaser antes del Reel (Miércoles)"
+               BODY="Hola! Es miércoles 12:30pm.\n\n📌 TAREA: Subir Story teaser en Instagram\n\n📁 Archivo: story_miercoles.jpg\n   (iCloud → EXP CREATIVE → EXP VIP → REDENTOR REDES → stories_semana_2_junio_2026)\n\n💡 El Reel de hoy sale automático a la 1pm CST.\n\n📊 Dashboard: https://vinnpal7-a11y.github.io/redentor-dashboard/" ;;
+            4) SUBJECT="🖼️ Redentor — Publicar Carrusel de Predicación (Jueves)"
+               BODY="Hola! Es jueves 1pm.\n\n📌 TAREA: Publicar Carrusel de Predicación en Instagram\n\n📁 Carpeta: carrusel_predica/ (5 slides)\n   (iCloud → EXP CREATIVE → EXP VIP → REDENTOR REDES → carruseles_semana_2_junio_2026)\n\n📌 Cómo publicar:\n   1. Abre Instagram → + → Publicación\n   2. Selecciona los 5 slides en orden\n   3. Agrega caption y publica\n\n📊 Dashboard: https://vinnpal7-a11y.github.io/redentor-dashboard/" ;;
+            6) SUBJECT="🖼️ Redentor — Publicar Carrusel de Versículos (Sábado)"
+               BODY="Hola! Es sábado 10am.\n\n📌 TAREA: Publicar Carrusel de Versículos en Instagram\n\n📁 Carpeta: carrusel_versiculos/ (6 slides)\n   (iCloud → EXP CREATIVE → EXP VIP → REDENTOR REDES → carruseles_semana_2_junio_2026)\n\n📊 Dashboard: https://vinnpal7-a11y.github.io/redentor-dashboard/" ;;
+            7) SUBJECT="📱 Redentor — Story invitación al servicio (Domingo)"
+               BODY="Hola! Es domingo 8:30am.\n\n📌 TAREA: Subir Story de invitación al servicio en Instagram\n\n📁 Archivo: story_domingo.jpg\n   (iCloud → EXP CREATIVE → EXP VIP → REDENTOR REDES → stories_semana_2_junio_2026)\n\n⛪ Hoy es el servicio dominical. ¡Que todo salga bien!\n\n📊 Dashboard: https://vinnpal7-a11y.github.io/redentor-dashboard/" ;;
+            *) SUBJECT="Redentor — Recordatorio"
+               BODY="Recordatorio de tarea manual Redentor Redes." ;;
+          esac
+          echo "subject=$SUBJECT" >> $GITHUB_OUTPUT
+          echo "body<<EOF_BODY" >> $GITHUB_OUTPUT
+          printf '%b' "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF_BODY" >> $GITHUB_OUTPUT
+
+      - name: Enviar email recordatorio
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: vinnpal7@gmail.com
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: ${{ steps.task.outputs.subject }}
+          to: vinnpal7@gmail.com
+          from: Redentor Redes <vinnpal7@gmail.com>
+          body: ${{ steps.task.outputs.body }}
+          content_type: text/plain
