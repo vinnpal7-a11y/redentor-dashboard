@@ -636,16 +636,18 @@ function renderStats(){
   const empty=document.getElementById('empty-history');
   if(history.length===0){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  tbody.innerHTML=[...history].reverse().map(h=>`
-    <tr>
-      <td>${h.label.replace('Semana del ','').slice(0,20)}</td>
-      <td style="color:${h.ig_followers>=50?'#4caf50':'#c49a2a'}">+${h.ig_followers}</td>
-      <td style="color:${h.fb_fans>=100?'#4caf50':'#c49a2a'}">+${h.fb_fans}</td>
-      <td style="color:${h.yt_subs>=25?'#4caf50':'#c49a2a'}">+${h.yt_subs}</td>
-      <td>${h.reel_views.toLocaleString()}</td>
-      <td>${h.reel_likes}</td>
-      <td>${h.comments}</td>
-    </tr>`).join('');
+  tbody.innerHTML=[...history].reverse().map(h=>{
+    const mon=new Date(h.week+'T12:00:00');
+    const lbl=h.label?h.label.replace('Semana del ','').slice(0,20):weekRangeLabel(mon);
+    return `<tr>
+      <td>${lbl}</td>
+      <td style="color:${(h.ig_followers||0)>=50?'#4caf50':'#c49a2a'}">+${h.ig_followers||0}</td>
+      <td style="color:${(h.fb_fans||0)>=100?'#4caf50':'#c49a2a'}">+${h.fb_fans||0}</td>
+      <td style="color:${(h.yt_subs||0)>=25?'#4caf50':'#c49a2a'}">+${h.yt_subs||0}</td>
+      <td>${(h.reel_views||0).toLocaleString()}</td>
+      <td>${h.reel_likes||0}</td>
+      <td>${h.comments||0}</td>
+    </tr>`;}).join('');
 }
 
 function progressRow(name,icon,color,val,target,label){
