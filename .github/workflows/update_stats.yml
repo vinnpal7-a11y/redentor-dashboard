@@ -1,9 +1,9 @@
-name: Actualizar estadísticas — cada lunes
+name: Actualizar estadísticas — cada 2 horas
 
 on:
   schedule:
-    - cron: '0 16 * * 1'   # Lunes 10am CST (16:00 UTC)
-  workflow_dispatch:        # También se puede correr manualmente
+    - cron: '0 */2 * * *'   # Cada 2 horas, todo el día
+  workflow_dispatch:          # También manual desde GitHub Actions
 
 jobs:
   update:
@@ -27,184 +27,255 @@ jobs:
         env:
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_PAGE_TOKEN:   ${{ secrets.META_PAGE_TOKEN }}
+          META_APP_ID:       ${{ secrets.META_APP_ID }}
+          META_APP_SECRET:   ${{ secrets.META_APP_SECRET }}
           META_PAGE_ID:      "532062283670945"
           META_IG_ACCOUNT:   "17841456697845516"
-          YT_CHANNEL_ID:     "UCP5sDBKbgBZnBiwvw_ZC9RA"
-          YT_API_KEY:        ${{ secrets.YT_API_KEY }}
+          YT_CLIENT_ID:      ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET:  ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN:  ${{ secrets.YT_REFRESH_TOKEN }}
         run: |
-          python3 - << 'EOF'
+          python3 - << 'PYEOF'
           import os, json, re, requests
-          from datetime import datetime, timezone
+          from datetime import datetime, timezone, timedelta
 
-          USER_TOKEN = os.environ['META_ACCESS_TOKEN']
-          PAGE_TOKEN = os.environ['META_PAGE_TOKEN']
+          USER_TOKEN = os.environ.get('META_ACCESS_TOKEN','')
+          PAGE_TOKEN = os.environ.get('META_PAGE_TOKEN','')
           PAGE_ID    = os.environ['META_PAGE_ID']
           IG_ACCT    = os.environ['META_IG_ACCOUNT']
-          YT_CH      = os.environ['YT_CHANNEL_ID']
-          YT_KEY     = os.environ.get('YT_API_KEY','')
+          APP_ID     = os.environ.get('META_APP_ID','')
+          APP_SECRET = os.environ.get('META_APP_SECRET','')
 
-          # ── Leer baseline de la semana anterior desde el index.html actual ──
+          # ══════════════════════════════════════════════════════
+          # 1. META — RENOVAR TOKEN EN CADA EJECUCIÓN
+          #
+          #  Estrategia "rolling": en cada ejecución intercambiamos
+          #  el token almacenado por uno nuevo de 60 días.
+          #  Como el workflow corre cada 2h, el token almacenado
+          #  nunca llega a expirar. No se necesita PAT ni librerías
+          #  especiales: solo APP_ID + APP_SECRET (permanentes).
+          #
+          #  El PAGE_TOKEN derivado de un long-lived token es
+          #  permanente — no necesita renovación nunca.
+          # ══════════════════════════════════════════════════════
+          if APP_ID and APP_SECRET and USER_TOKEN:
+              try:
+                  r = requests.get('https://graph.facebook.com/oauth/access_token', params={
+                      'grant_type':        'fb_exchange_token',
+                      'client_id':         APP_ID,
+                      'client_secret':     APP_SECRET,
+                      'fb_exchange_token': USER_TOKEN,
+                  }, timeout=10)
+                  fresh = r.json().get('access_token','')
+                  if fresh:
+                      USER_TOKEN = fresh
+                      exp_s = r.json().get('expires_in', 0)
+                      print(f"Token Meta renovado — expira en {exp_s//86400} días")
+                  else:
+                      print(f"Meta exchange sin access_token: {r.text[:80]}")
+              except Exception as e:
+                  print(f"Meta exchange error: {e} — usando token almacenado")
+          else:
+              print("Sin APP_SECRET — usando token Meta almacenado sin renovar")
+
+          # ══════════════════════════════════════════════════════
+          # 2. LEER BASELINE de la semana anterior
+          # ══════════════════════════════════════════════════════
           with open('index.html') as f:
               old_html = f.read()
-          old_m = re.search(r'<script id="stats-data" type="application/json">(.*?)</script>', old_html, re.DOTALL)
-          prev_week = {}
-          if old_m:
-              try:
-                  old_stats = json.loads(old_m.group(1))
-                  yt_old = old_stats.get('youtube', {})
-                  ig_old = old_stats.get('instagram', {})
-                  fb_old = old_stats.get('facebook', {})
-                  prev_week = {
-                      'yt_subs':      yt_old.get('subscribers', 0),
-                      'ig_followers': ig_old.get('followers', 0),
-                      'fb_fans':      fb_old.get('fans', 0),
-                  }
-                  print(f"Baseline anterior: {prev_week}")
-              except Exception as e:
-                  print(f"Baseline error: {e}")
+          old_m = re.search(r'<script id="stats-data" type="application/json">(.*?)</script>',
+                            old_html, re.DOTALL)
+          old_stats = json.loads(old_m.group(1)) if old_m else {}
+          prev_week = old_stats.get('prev_week', {})
+          old_yt    = old_stats.get('youtube',   {})
+          old_ig    = old_stats.get('instagram', {})
+          old_fb    = old_stats.get('facebook',  {})
 
-          stats = {'fetched_at': datetime.now(timezone.utc).isoformat(), 'prev_week': prev_week}
+          # Los lunes actualizamos el baseline para que el delta
+          # de la semana próxima arranque desde los números de hoy.
+          if datetime.now(timezone.utc).weekday() == 0:
+              prev_week = {
+                  'yt_subs':      old_yt.get('subscribers',  prev_week.get('yt_subs',  0)),
+                  'ig_followers': old_ig.get('followers',    prev_week.get('ig_followers', 0)),
+                  'fb_fans':      old_fb.get('fans',         prev_week.get('fb_fans',  0)),
+              }
+              print(f"Lunes: baseline actualizado → {prev_week}")
 
-          # ── Instagram ──
+          # ══════════════════════════════════════════════════════
+          # 3. YOUTUBE — OAuth con refresh token (nunca expira)
+          # ══════════════════════════════════════════════════════
+          print("\nFetching YouTube...")
+          yt_stats = dict(old_yt)
           try:
-              ig = requests.get(
+              token_r = requests.post('https://oauth2.googleapis.com/token', data={
+                  'client_id':     os.environ['YT_CLIENT_ID'],
+                  'client_secret': os.environ['YT_CLIENT_SECRET'],
+                  'refresh_token': os.environ['YT_REFRESH_TOKEN'],
+                  'grant_type':    'refresh_token',
+              }, timeout=15)
+              yt_access = token_r.json().get('access_token','')
+              if not yt_access:
+                  raise Exception(f"No access_token: {token_r.text[:120]}")
+
+              def yt_get(url, params):
+                  params['access_token'] = yt_access
+                  return requests.get(url, params=params, timeout=15).json()
+
+              ch    = yt_get('https://www.googleapis.com/youtube/v3/channels',
+                             {'part':'statistics','mine':'true'})
+              ch_id = ch['items'][0]['id']
+              st    = ch['items'][0]['statistics']
+              subs  = int(st.get('subscriberCount', 0))
+              views = int(st.get('viewCount', 0))
+              print(f"  Canal: {subs} subs, {views:,} vistas")
+
+              # Últimos 30 vídeos → filtrar Shorts (<= 65 s)
+              search_r = yt_get('https://www.googleapis.com/youtube/v3/search', {
+                  'part':'id,snippet', 'channelId':ch_id,
+                  'type':'video', 'order':'date', 'maxResults':'30'
+              })
+              vid_ids = [i['id']['videoId'] for i in search_r.get('items',[])]
+
+              shorts = []
+              if vid_ids:
+                  vids_r = yt_get('https://www.googleapis.com/youtube/v3/videos', {
+                      'part':'statistics,snippet,contentDetails',
+                      'id':','.join(vid_ids)
+                  })
+                  for v in vids_r.get('items',[]):
+                      dur  = v['contentDetails']['duration']
+                      mins = int(re.search(r'(\d+)M',dur).group(1)) if re.search(r'(\d+)M',dur) else 0
+                      secs = int(re.search(r'(\d+)S',dur).group(1)) if re.search(r'(\d+)S',dur) else 0
+                      if mins*60 + secs <= 65:
+                          s2 = v['statistics']
+                          shorts.append({
+                              'id':          v['id'],
+                              'title':       v['snippet']['title'].replace(' #Shorts','').replace(' #shorts',''),
+                              'views':       int(s2.get('viewCount',0)),
+                              'likes':       int(s2.get('likeCount',0)),
+                              'publishedAt': v['snippet']['publishedAt'][:10],
+                          })
+              shorts.sort(key=lambda x: -x['views'])
+              print(f"  Shorts: {len(shorts)} | {sum(s['views'] for s in shorts):,} vistas totales")
+
+              yt_stats = {
+                  'subscribers':        subs,
+                  'total_views':        views,
+                  'shorts':             shorts,
+                  'shorts_total_views': sum(s['views'] for s in shorts),
+                  'shorts_total_likes': sum(s['likes'] for s in shorts),
+                  'subs_delta':         subs - prev_week.get('yt_subs', subs),
+              }
+          except Exception as e:
+              print(f"  YT error: {e} — manteniendo datos anteriores")
+
+          # ══════════════════════════════════════════════════════
+          # 4. INSTAGRAM
+          # ══════════════════════════════════════════════════════
+          print("\nFetching Instagram...")
+          ig_stats = dict(old_ig)
+          try:
+              ig_r = requests.get(
                   f'https://graph.facebook.com/v19.0/{IG_ACCT}',
                   params={'fields':'followers_count,media_count','access_token':USER_TOKEN},
-                  timeout=10
-              ).json()
+                  timeout=10).json()
+              if 'error' in ig_r:
+                  raise Exception(ig_r['error'].get('message','API error'))
               posts_r = requests.get(
                   f'https://graph.facebook.com/v19.0/{IG_ACCT}/media',
-                  params={'fields':'id,media_type,timestamp,like_count,comments_count','limit':5,'access_token':USER_TOKEN},
-                  timeout=10
-              ).json()
-              posts = posts_r.get('data',[])
-              ig_followers = ig.get('followers_count',0)
-              stats['instagram'] = {
+                  params={'fields':'id,media_type,timestamp,like_count,comments_count',
+                          'limit':'8','access_token':USER_TOKEN},
+                  timeout=10).json()
+              posts        = posts_r.get('data',[])
+              ig_followers = ig_r.get('followers_count',0)
+              ig_stats = {
                   'followers':       ig_followers,
-                  'media_count':     ig.get('media_count',0),
+                  'media_count':     ig_r.get('media_count',0),
                   'recent_likes':    sum(p.get('like_count',0) for p in posts),
                   'recent_comments': sum(p.get('comments_count',0) for p in posts),
                   'posts':           posts,
                   'followers_delta': ig_followers - prev_week.get('ig_followers', ig_followers),
               }
-              print(f"IG: {ig.get('followers_count')} seguidores")
+              print(f"  IG: {ig_followers} seguidores")
           except Exception as e:
-              print(f"IG error: {e}")
-              stats['instagram'] = {}
+              print(f"  IG error: {e} — manteniendo datos anteriores")
 
-          # ── Facebook ──
+          # ══════════════════════════════════════════════════════
+          # 5. FACEBOOK
+          # ══════════════════════════════════════════════════════
+          print("\nFetching Facebook...")
+          fb_stats = dict(old_fb)
           try:
-              fb = requests.get(
+              fb_r = requests.get(
                   f'https://graph.facebook.com/v19.0/{PAGE_ID}',
                   params={'fields':'fan_count,followers_count','access_token':PAGE_TOKEN},
-                  timeout=10
-              ).json()
-              fb_fans = fb.get('fan_count',0)
-              stats['facebook'] = {
+                  timeout=10).json()
+              if 'error' in fb_r:
+                  raise Exception(fb_r['error'].get('message','API error'))
+              fb_fans = fb_r.get('fan_count',0)
+              fb_stats = {
                   'fans':       fb_fans,
-                  'followers':  fb.get('followers_count',0),
+                  'followers':  fb_r.get('followers_count',0),
                   'fans_delta': fb_fans - prev_week.get('fb_fans', fb_fans),
               }
-              print(f"FB: {fb.get('fan_count')} fans")
+              print(f"  FB: {fb_fans} fans")
           except Exception as e:
-              print(f"FB error: {e}")
-              stats['facebook'] = {}
+              print(f"  FB error: {e} — manteniendo datos anteriores")
 
-          # ── YouTube (API Key para datos públicos) ──
-          try:
-              if YT_KEY:
-                  ch = requests.get(
-                      'https://www.googleapis.com/youtube/v3/channels',
-                      params={'part':'statistics','id':YT_CH,'key':YT_KEY},
-                      timeout=10
-                  ).json()
-                  yt_st = ch['items'][0]['statistics']
-                  subs  = int(yt_st.get('subscriberCount',0))
-                  views = int(yt_st.get('viewCount',0))
+          # ══════════════════════════════════════════════════════
+          # 6. ACTUALIZAR history-data (cada lunes)
+          # ══════════════════════════════════════════════════════
+          html = old_html
+          if datetime.now(timezone.utc).weekday() == 0:
+              hist_m = re.search(r'<script id="history-data" type="application/json">(.*?)</script>',
+                                 html, re.DOTALL)
+              if hist_m:
+                  history  = json.loads(hist_m.group(1))
+                  today    = datetime.now(timezone.utc)
+                  last_mon = today - timedelta(days=today.weekday())
+                  week_key = last_mon.strftime('%Y-%m-%d')
+                  if not any(h['week']==week_key for h in history):
+                      history.append({
+                          'week':        week_key,
+                          'ig_followers': ig_stats.get('followers_delta',0),
+                          'fb_fans':      fb_stats.get('fans_delta',0),
+                          'yt_subs':      yt_stats.get('subs_delta',0),
+                          'reel_views':   yt_stats.get('shorts_total_views',0),
+                          'ig_total':     ig_stats.get('followers',0),
+                          'fb_total':     fb_stats.get('fans',0),
+                          'yt_total':     yt_stats.get('subscribers',0),
+                      })
+                      history.sort(key=lambda h: h['week'])
+                      new_hist = (f'<script id="history-data" type="application/json">'
+                                  f'{json.dumps(history,ensure_ascii=False)}</script>')
+                      html = re.sub(
+                          r'<script id="history-data" type="application/json">.*?</script>',
+                          new_hist, html, flags=re.DOTALL)
+                      print(f"\n✅ history-data: entrada {week_key} añadida")
 
-                  # Shorts recientes (IDs hardcodeados — se actualizan con el pipeline semanal)
-                  short_ids = ['VmVWoWqHbEA','d7Be9nfBANU','WYEFrEBaGVY','v8c5AD0C7jc','-NOYisLSkT4','v_LCM4q6I30']
-                  sv = requests.get(
-                      'https://www.googleapis.com/youtube/v3/videos',
-                      params={'part':'statistics,snippet','id':','.join(short_ids),'key':YT_KEY},
-                      timeout=10
-                  ).json()
-                  shorts = [{'id':i['id'],
-                             'title':i['snippet']['title'].replace(' #Shorts',''),
-                             'views':int(i['statistics'].get('viewCount',0)),
-                             'likes':int(i['statistics'].get('likeCount',0))}
-                            for i in sv.get('items',[])]
-                  stats['youtube'] = {
-                      'subscribers':       subs,
-                      'total_views':       views,
-                      'shorts':            shorts,
-                      'shorts_total_views':sum(s['views'] for s in shorts),
-                      'shorts_total_likes':sum(s['likes'] for s in shorts),
-                      'subs_delta':        subs - prev_week.get('yt_subs', subs),
-                  }
-                  print(f"YT: {subs} subs (API key)")
-              else:
-                  print("YT: sin API key — manteniendo datos anteriores")
-                  # Leer stats actuales y mantener YT
-                  with open('index.html') as f:
-                      existing = f.read()
-                  m = re.search(r'<script id="stats-data" type="application/json">(.*?)</script>', existing, re.DOTALL)
-                  if m:
-                      old = json.loads(m.group(1))
-                      stats['youtube'] = old.get('youtube', {})
-          except Exception as e:
-              print(f"YT error: {e}")
-              stats['youtube'] = {}
-
-          # ── Inyectar en index.html ──
-          with open('index.html') as f:
-              html = f.read()
-
-          # Actualizar stats-data
-          new_tag = f'<script id="stats-data" type="application/json">{json.dumps(stats, ensure_ascii=False)}</script>'
+          # ══════════════════════════════════════════════════════
+          # 7. INYECTAR stats-data y guardar
+          # ══════════════════════════════════════════════════════
+          full_stats = {
+              'fetched_at': datetime.now(timezone.utc).isoformat(),
+              'prev_week':  prev_week,
+              'youtube':    yt_stats,
+              'instagram':  ig_stats,
+              'facebook':   fb_stats,
+          }
+          new_tag = (f'<script id="stats-data" type="application/json">'
+                     f'{json.dumps(full_stats,ensure_ascii=False)}</script>')
           html = re.sub(
               r'<script id="stats-data" type="application/json">.*?</script>',
-              new_tag, html, flags=re.DOTALL
-          )
-
-          # Actualizar history-data — añadir entrada de la semana anterior
-          hist_m = re.search(r'<script id="history-data" type="application/json">(.*?)</script>', html, re.DOTALL)
-          if hist_m and prev_week:
-              history = json.loads(hist_m.group(1))
-              from datetime import datetime as dt2, timedelta
-              # Lunes de la semana anterior
-              today = dt2.now(timezone.utc)
-              last_mon = today - timedelta(days=today.weekday()+7)
-              week_key = last_mon.strftime('%Y-%m-%d')
-              yt_now  = stats.get('youtube',{}).get('subscribers',0)
-              ig_now  = stats.get('instagram',{}).get('followers',0)
-              fb_now  = stats.get('facebook',{}).get('fans',0)
-              new_entry = {
-                  'week':        week_key,
-                  'ig_followers':ig_now - prev_week.get('ig_followers',ig_now),
-                  'fb_fans':     fb_now - prev_week.get('fb_fans',fb_now),
-                  'yt_subs':     yt_now - prev_week.get('yt_subs',yt_now),
-                  'reel_views':  stats.get('youtube',{}).get('shorts_total_views',0),
-                  'ig_total':    ig_now,
-                  'fb_total':    fb_now,
-                  'yt_total':    yt_now,
-              }
-              if not any(h['week']==week_key for h in history):
-                  history.append(new_entry)
-                  history.sort(key=lambda h: h['week'])
-                  new_hist = f'<script id="history-data" type="application/json">{json.dumps(history, ensure_ascii=False)}</script>'
-                  html = re.sub(
-                      r'<script id="history-data" type="application/json">.*?</script>',
-                      new_hist, html, flags=re.DOTALL
-                  )
-                  print(f"✅ history-data: entrada {week_key} añadida — {new_entry}")
-              else:
-                  print(f"ℹ️  history-data: semana {week_key} ya existe")
-
-          with open('index.html', 'w') as f:
+              new_tag, html, flags=re.DOTALL)
+          with open('index.html','w') as f:
               f.write(html)
-          print(f"✅ index.html actualizado — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
-          EOF
+
+          print(f"\n✅ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+          print(f"   YT  {yt_stats.get('subscribers','?')} subs  (Δ {yt_stats.get('subs_delta','?')})")
+          print(f"   IG  {ig_stats.get('followers','?')} seg  (Δ {ig_stats.get('followers_delta','?')})")
+          print(f"   FB  {fb_stats.get('fans','?')} fans (Δ {fb_stats.get('fans_delta','?')})")
+          PYEOF
 
       - name: Commit y push
         run: |
@@ -212,8 +283,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --staged --quiet; then
-            echo "Sin cambios en stats."
+            echo "Sin cambios."
           else
-            git commit -m "Stats actualizados $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git commit -m "Stats $(date -u '+%Y-%m-%d %H:%M UTC')"
             git push
           fi
