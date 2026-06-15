@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revisión Semana 3 · Jun 15–21 · Pastor Gilberto</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Helvetica, sans-serif; background: #F7F7F7; color: #1A1A1A; }
+
+  .header { background: #0F1420; color: #fff; padding: 2rem 1.5rem 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #8898AA; }
+  .badge { display: inline-block; background: #C49A2A; color: #0F1420; font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+
+  .section-title { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #888; margin: 2.5rem 0 1rem; padding-bottom: 8px; border-bottom: 1px solid #E5E5E5; }
+
+  /* ── Reels grid ────────────────────────────────────────── */
+  .reels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+  .reel-card { background: #fff; border-radius: 12px; border: 1.5px solid #E5E5E5; overflow: hidden; }
+  .reel-video { background: #000; display: flex; justify-content: center; }
+  .reel-video video { height: 380px; width: auto; aspect-ratio: 9/16; object-fit: cover; display: block; }
+  .reel-meta { padding: .9rem 1rem; }
+  .reel-num { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #888; margin-bottom: 3px; }
+  .reel-title { font-size: 14px; font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
+  .reel-desc { font-size: 11px; color: #666; line-height: 1.5; margin-bottom: 8px; }
+  .reel-info { font-size: 11px; color: #999; display: flex; gap: 12px; margin-bottom: 10px; }
+  .reel-yt { display: inline-block; font-size: 11px; font-weight: 600; color: #FF0000; text-decoration: none; border: 1px solid #FFCCCC; border-radius: 5px; padding: 4px 10px; }
+  .reel-yt:hover { background: #FFF5F5; }
+  .tag-sermon  { background: #EEF4FF; color: #3366CC; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+  .tag-escuela { background: #F0FFF4; color: #2E7D52; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+
+  /* ── Carousel viewer ────────────────────────────────────── */
+  .carousels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
+  .carousel-card { background: #fff; border-radius: 12px; border: 1.5px solid #E5E5E5; overflow: hidden; }
+  .carousel-viewer { position: relative; background: #111; aspect-ratio: 1; }
+  .carousel-viewer img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); display: flex; width: 100%; justify-content: space-between; padding: 0 8px; pointer-events: none; }
+  .carousel-nav button { pointer-events: all; background: rgba(0,0,0,.55); color: #fff; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .carousel-counter { position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 99px; }
+  .carousel-meta { padding: .9rem 1rem; }
+  .carousel-label { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 3px; }
+
+  /* ── Stories grid ────────────────────────────────────────── */
+  .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 1rem; }
+  .story-card { background: #fff; border-radius: 12px; border: 1.5px solid #E5E5E5; overflow: hidden; }
+  .story-img { aspect-ratio: 9/16; overflow: hidden; background: #111; }
+  .story-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .story-meta { padding: .75rem; font-size: 11px; font-weight: 600; color: #666; }
+
+  /* ── Schedule table ─────────────────────────────────────── */
+  .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #E5E5E5; }
+  .schedule-table th { background: #F5F5F5; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-align: left; padding: 8px 12px; color: #555; border-bottom: 1px solid #E5E5E5; }
+  .schedule-table td { padding: 8px 12px; border-bottom: 1px solid #F0F0F0; vertical-align: middle; }
+  .schedule-table tr:last-child td { border-bottom: none; }
+  .schedule-table a { color: #3366CC; text-decoration: none; font-size: 11px; }
+  .dot-sermon  { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3366CC; margin-right: 6px; }
+  .dot-escuela { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2E7D52; margin-right: 6px; }
+
+  .footer { text-align: center; padding: 2.5rem 1rem; font-size: 11px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">SEMANA 3 · JUN 15–21, 2026</div>
+  <h1>Revisión semanal — Templo El Redentor</h1>
+  <p>6 Reels · 4 Carruseles · 5 Stories · Sermón: Discerniendo el Tiempo · Escuela: David</p>
+</div>
+
+<div class="container">
+
+  <!-- ── PROGRAMACIÓN ──────────────────────────────────────────────────── -->
+  <div class="section-title">Programación de publicación</div>
+  <table class="schedule-table">
+    <thead>
+      <tr>
+        <th>Día</th><th>Hora CST</th><th>Clip</th><th>YouTube Short</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lun 16 Jun</td><td>1:00 PM</td>
+        <td><span class="dot-sermon"></span>S01 · La verdad es Cristo</td>
+        <td><a href="https://youtube.com/shorts/I8KyXT6VYf8" target="_blank">▶ Ver Short</a></td>
+      </tr>
+      <tr>
+        <td>Mar 17 Jun</td><td>7:00 AM</td>
+        <td><span class="dot-escuela"></span>E01 · David conquista Sión</td>
+        <td><a href="https://youtube.com/shorts/gim8JEg-v3w" target="_blank">▶ Ver Short</a></td>
+      </tr>
+      <tr>
+        <td>Mié 18 Jun</td><td>1:00 PM</td>
+        <td><span class="dot-sermon"></span>S02 · Aprovechando bien el tiempo</td>
+        <td><a href="https://youtube.com/shorts/xl25NpJSDzg" target="_blank">▶ Ver Short</a></td>
+      </tr>
+      <tr>
+        <td>Jue 19 Jun</td><td>7:00 AM</td>
+        <td><span class="dot-escuela"></span>E02 · Israel gobernó el territorio</td>
+        <td><a href="https://youtube.com/shorts/aufBUqOF11M" target="_blank">▶ Ver Short</a></td>
+      </tr>
+      <tr>
+        <td>Vie 20 Jun</td><td>1:00 PM</td>
+        <td><span class="dot-sermon"></span>S03 · Vive Cristo en nosotros</td>
+        <td><a href="https://youtube.com/shorts/bWjMzRkUwp4" target="_blank">▶ Ver Short</a></td>
+      </tr>
+      <tr>
+        <td>Sáb 21 Jun</td><td>7:00 AM</td>
+        <td><span class="dot-escuela"></span>E03 · De victorias a tragedias</td>
+        <td><a href="https://youtube.com/shorts/yaLQYcKKCqc" target="_blank">▶ Ver Short</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── REELS ──────────────────────────────────────────────────────────── -->
+  <div class="section-title">Reels — Sermón: Discerniendo el Tiempo</div>
+  <div class="reels-grid">
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547782/redentor/semana_jun15-21/Gn3I0Kt0QeQ/clip_601.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">SERMÓN · S01 · Lun 16 Jun 1:00pm</div>
+        <div class="reel-title">La verdad es Cristo</div>
+        <div class="reel-desc">No estamos desorientados — estamos en la verdad y la verdad es Cristo.</div>
+        <div class="reel-info"><span>⏱ 29s</span><span><span class="tag-sermon">Sermón</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/I8KyXT6VYf8" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547789/redentor/semana_jun15-21/Gn3I0Kt0QeQ/clip_602.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">SERMÓN · S02 · Mié 18 Jun 1:00pm</div>
+        <div class="reel-title">Aprovechando bien el tiempo</div>
+        <div class="reel-desc">Efesios 5:16 — aprovechar bien el tiempo porque los días son malos.</div>
+        <div class="reel-info"><span>⏱ 30s</span><span><span class="tag-sermon">Sermón</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/xl25NpJSDzg" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547796/redentor/semana_jun15-21/Gn3I0Kt0QeQ/clip_603.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">SERMÓN · S03 · Vie 20 Jun 1:00pm</div>
+        <div class="reel-title">Vive Cristo en nosotros</div>
+        <div class="reel-desc">Por medio de estas vasijas de barro manifiesta su conocimiento en todo lugar.</div>
+        <div class="reel-info"><span>⏱ 25s</span><span><span class="tag-sermon">Sermón</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/bWjMzRkUwp4" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-title">Reels — Escuela Dominical: El Reino de David</div>
+  <div class="reels-grid">
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547785/redentor/semana_jun15-21/TdJX3FxHkkI/clip_701.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">ESCUELA · E01 · Mar 17 Jun 7:00am</div>
+        <div class="reel-title">David conquista Sión y funda Jerusalén</div>
+        <div class="reel-desc">David captura la fortaleza de Sión — logísticamente ideal — y funda ahí su capital.</div>
+        <div class="reel-info"><span>⏱ 37s</span><span><span class="tag-escuela">Escuela</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/gim8JEg-v3w" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547793/redentor/semana_jun15-21/TdJX3FxHkkI/clip_702.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">ESCUELA · E02 · Jue 19 Jun 7:00am</div>
+        <div class="reel-title">Israel gobernó todo el territorio prometido por Dios</div>
+        <div class="reel-desc">David logró lo que ningún rey antes: gobernar desde el río de Egipto hasta el Éufrates.</div>
+        <div class="reel-info"><span>⏱ 47s</span><span><span class="tag-escuela">Escuela</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/aufBUqOF11M" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+    <div class="reel-card">
+      <div class="reel-video">
+        <video controls preload="metadata" src="https://res.cloudinary.com/dr9dtabgq/video/upload/v1781547800/redentor/semana_jun15-21/TdJX3FxHkkI/clip_703.mp4"></video>
+      </div>
+      <div class="reel-meta">
+        <div class="reel-num">ESCUELA · E03 · Sáb 21 Jun 7:00am</div>
+        <div class="reel-title">De victorias a tragedias: la caída de David</div>
+        <div class="reel-desc">De rey invencible a padre destrozado — la infidelidad siempre cobra su precio.</div>
+        <div class="reel-info"><span>⏱ 15s</span><span><span class="tag-escuela">Escuela</span></span></div>
+        <a class="reel-yt" href="https://youtube.com/shorts/yaLQYcKKCqc" target="_blank">▶ YouTube Short</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── CARRUSELES ──────────────────────────────────────────────────────── -->
+  <div class="section-title">Carruseles</div>
+  <div class="carousels-grid">
+
+    <div class="carousel-card">
+      <div class="carousel-viewer" id="cv-sermon">
+        <img id="ci-sermon" src="clips/Gn3I0Kt0QeQ/carousel/carousel_00_portada.jpg" alt="">
+        <div class="carousel-nav">
+          <button onclick="carouselNav('sermon',-1)">‹</button>
+          <button onclick="carouselNav('sermon',1)">›</button>
+        </div>
+        <div class="carousel-counter" id="cc-sermon">1/5</div>
+      </div>
+      <div class="carousel-meta">
+        <div class="carousel-label">SERMÓN — La predicación en puntos</div>
+      </div>
+    </div>
+
+    <div class="carousel-card">
+      <div class="carousel-viewer" id="cv-escuela">
+        <img id="ci-escuela" src="clips/TdJX3FxHkkI/carousel/carousel_00_portada.jpg" alt="">
+        <div class="carousel-nav">
+          <button onclick="carouselNav('escuela',-1)">‹</button>
+          <button onclick="carouselNav('escuela',1)">›</button>
+        </div>
+        <div class="carousel-counter" id="cc-escuela">1/5</div>
+      </div>
+      <div class="carousel-meta">
+        <div class="carousel-label">ESCUELA DOMINICAL</div>
+      </div>
+    </div>
+
+    <div class="carousel-card">
+      <div class="carousel-viewer" id="cv-versiculos">
+        <img id="ci-versiculos" src="clips/extras/semana_jun15-21/versiculos/versiculos_00_portada.jpg" alt="">
+        <div class="carousel-nav">
+          <button onclick="carouselNav('versiculos',-1)">‹</button>
+          <button onclick="carouselNav('versiculos',1)">›</button>
+        </div>
+        <div class="carousel-counter" id="cc-versiculos">1/6</div>
+      </div>
+      <div class="carousel-meta">
+        <div class="carousel-label">VERSÍCULOS DE LA SEMANA</div>
+      </div>
+    </div>
+
+    <div class="carousel-card">
+      <div class="carousel-viewer" id="cv-frases">
+        <img id="ci-frases" src="clips/extras/semana_jun15-21/frases/frases_00_portada.jpg" alt="">
+        <div class="carousel-nav">
+          <button onclick="carouselNav('frases',-1)">‹</button>
+          <button onclick="carouselNav('frases',1)">›</button>
+        </div>
+        <div class="carousel-counter" id="cc-frases">1/6</div>
+      </div>
+      <div class="carousel-meta">
+        <div class="carousel-label">FRASES DE LA SEMANA</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── STORIES ──────────────────────────────────────────────────────────── -->
+  <div class="section-title">Stories</div>
+  <div class="stories-grid">
+
+    <div class="story-card">
+      <div class="story-img"><img src="clips/Gn3I0Kt0QeQ/stories/story_domingo.jpg" alt=""></div>
+      <div class="story-meta">Story Domingo — Invitación servicio</div>
+    </div>
+
+    <div class="story-card">
+      <div class="story-img"><img src="clips/Gn3I0Kt0QeQ/stories/story_lunes.jpg" alt=""></div>
+      <div class="story-meta">Story Lunes — Frase bíblica + encuesta</div>
+    </div>
+
+    <div class="story-card">
+      <div class="story-img"><img src="clips/Gn3I0Kt0QeQ/stories/story_miercoles.jpg" alt=""></div>
+      <div class="story-meta">Story Miércoles — Teaser nuevo video</div>
+    </div>
+
+    <div class="story-card">
+      <div class="story-img"><img src="clips/TdJX3FxHkkI/stories/story_lunes.jpg" alt=""></div>
+      <div class="story-meta">Escuela — Story Lunes</div>
+    </div>
+
+    <div class="story-card">
+      <div class="story-img"><img src="clips/TdJX3FxHkkI/stories/story_miercoles.jpg" alt=""></div>
+      <div class="story-meta">Escuela — Story Miércoles</div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">Templo El Redentor · Chihuahua · Semana Jun 15–21, 2026</div>
+
+<script>
+const CAROUSELS = {
+  sermon:    ['clips/Gn3I0Kt0QeQ/carousel/carousel_00_portada.jpg','clips/Gn3I0Kt0QeQ/carousel/carousel_01_frase.jpg','clips/Gn3I0Kt0QeQ/carousel/carousel_02_frase.jpg','clips/Gn3I0Kt0QeQ/carousel/carousel_03_frase.jpg','clips/Gn3I0Kt0QeQ/carousel/carousel_cta.jpg'],
+  escuela:   ['clips/TdJX3FxHkkI/carousel/carousel_00_portada.jpg','clips/TdJX3FxHkkI/carousel/carousel_01_frase.jpg','clips/TdJX3FxHkkI/carousel/carousel_02_frase.jpg','clips/TdJX3FxHkkI/carousel/carousel_03_frase.jpg','clips/TdJX3FxHkkI/carousel/carousel_cta.jpg'],
+  versiculos:['clips/extras/semana_jun15-21/versiculos/versiculos_00_portada.jpg','clips/extras/semana_jun15-21/versiculos/versiculos_01.jpg','clips/extras/semana_jun15-21/versiculos/versiculos_02.jpg','clips/extras/semana_jun15-21/versiculos/versiculos_03.jpg','clips/extras/semana_jun15-21/versiculos/versiculos_04.jpg','clips/extras/semana_jun15-21/versiculos/versiculos_cta.jpg'],
+  frases:    ['clips/extras/semana_jun15-21/frases/frases_00_portada.jpg','clips/extras/semana_jun15-21/frases/frases_01.jpg','clips/extras/semana_jun15-21/frases/frases_02.jpg','clips/extras/semana_jun15-21/frases/frases_03.jpg','clips/extras/semana_jun15-21/frases/frases_04.jpg','clips/extras/semana_jun15-21/frases/frases_cta.jpg'],
+};
+const IDXS = { sermon:0, escuela:0, versiculos:0, frases:0 };
+
+function carouselNav(id, dir) {
+  const slides = CAROUSELS[id];
+  IDXS[id] = (IDXS[id] + dir + slides.length) % slides.length;
+  document.getElementById('ci-' + id).src = slides[IDXS[id]];
+  document.getElementById('cc-' + id).textContent = (IDXS[id]+1) + '/' + slides.length;
+}
+</script>
+</body>
+</html>
