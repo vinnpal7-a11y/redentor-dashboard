@@ -1,0 +1,161 @@
+name: IG Publish — Semana 4 Jun 22–28
+
+on:
+  schedule:
+    - cron: '0 14 23 6 *'   # 901 — Mar Jun 23 14:00 UTC
+    - cron: '0 19 24 6 *'   # 802 — Mié Jun 24 19:00 UTC
+    - cron: '0 14 25 6 *'   # 902 — Jue Jun 25 14:00 UTC
+    - cron: '0 19 26 6 *'   # 803 — Vie Jun 26 19:00 UTC
+    - cron: '0 14 27 6 *'   # 903 — Sáb Jun 27 14:00 UTC
+  workflow_dispatch:
+    inputs:
+      clip_num:
+        description: 'Clip number to publish (901, 802, 902, 803, 903)'
+        required: true
+        default: '901'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select clip by schedule
+        id: clip
+        run: |
+          DOW=$(date -u +%u)   # 1=Mon, 2=Tue, ...
+          HOUR=$(date -u +%H)
+          INPUT_NUM="${{ github.event.inputs.clip_num }}"
+
+          if [ -n "$INPUT_NUM" ]; then
+            NUM="$INPUT_NUM"
+          elif [ "$DOW" = "2" ]; then
+            NUM="901"
+          elif [ "$DOW" = "3" ]; then
+            NUM="802"
+          elif [ "$DOW" = "4" ]; then
+            NUM="902"
+          elif [ "$DOW" = "5" ]; then
+            NUM="803"
+          elif [ "$DOW" = "6" ]; then
+            NUM="903"
+          else
+            echo "No clip scheduled today (DOW=$DOW)"
+            exit 1
+          fi
+          echo "num=$NUM" >> $GITHUB_OUTPUT
+
+          case "$NUM" in
+            901)
+              echo "video_url=https://res.cloudinary.com/dr9dtabgq/video/upload/v1782110877/redentor/semana_jun22-28/alAwYjhvmqc/clip_901.mp4" >> $GITHUB_OUTPUT
+              echo 'caption=El problema no es el problema en tu matrimonio
+
+La raíz de los conflictos matrimoniales no está en el desacuerdo, sino en no saber resolverlo.
+
+📖 Mira la clase COMPLETA en YouTube ↓
+https://youtube.com/live/alAwYjhvmqc
+
+#matrimoniocristiano #conflictosmatrimoniales #consejeriafamiliar #iglesia #escueladominical #vidaenpareja #fe #VolvéosALaFortaleza #PrisionerosDeEsperanza #Restauracion #FortahezaDeDios #Redentor #Chihuahua #Iglesia #Fe #Predica #Dios #Cristo' >> $GITHUB_OUTPUT
+              ;;
+            802)
+              echo "video_url=https://res.cloudinary.com/dr9dtabgq/video/upload/v1782110880/redentor/semana_jun22-28/QxOodKJCLoA/clip_802.mp4" >> $GITHUB_OUTPUT
+              echo 'caption=Dios te destinó a la gloria
+
+Ser hijo de Dios no es un título vacío: es un destino de gloria que ninguna aflicción presente puede quitarte.
+
+🎙️ Mira la predicación COMPLETA en YouTube ↓
+https://youtu.be/QxOodKJCLoA
+
+#Gloria #HijosDeDios #Esperanza #Predicación #Fe #Iglesia #PropósitoEterno #VolvéosALaFortaleza #PrisionerosDeEsperanza #Restauracion #FortahezaDeDios #Redentor #Chihuahua #Predica #Dios #Cristo #Sermon #Palabra' >> $GITHUB_OUTPUT
+              ;;
+            902)
+              echo "video_url=https://res.cloudinary.com/dr9dtabgq/video/upload/v1782110882/redentor/semana_jun22-28/alAwYjhvmqc/clip_902.mp4" >> $GITHUB_OUTPUT
+              echo 'caption=Las parejas más felices no evaden los conflictos
+
+Evadir el conflicto no trae paz — enfrentarlo con madurez cristiana sí construye un matrimonio pleno.
+
+📖 Mira la clase COMPLETA en YouTube ↓
+https://youtube.com/live/alAwYjhvmqc
+
+#matrimoniocristiano #escueladominical #relacionessanas #consejeriafamiliar #iglesia #vidaenpareja #crecimientopersonal #VolvéosALaFortaleza #PrisionerosDeEsperanza #Restauracion #FortahezaDeDios #Redentor #Chihuahua #Iglesia #Fe #Predica #Dios #Cristo' >> $GITHUB_OUTPUT
+              ;;
+            803)
+              echo "video_url=https://res.cloudinary.com/dr9dtabgq/video/upload/v1782110885/redentor/semana_jun22-28/QxOodKJCLoA/clip_803.mp4" >> $GITHUB_OUTPUT
+              echo 'caption=Lo que Dios tiene preparado para ti
+
+Ni la imaginación más fértil alcanza a ver todo lo que tu Padre Celestial ha reservado para ti como su hijo.
+
+🎙️ Mira la predicación COMPLETA en YouTube ↓
+https://youtu.be/QxOodKJCLoA
+
+#PromesasDeDios #HijosDeDios #Eternidad #Fe #Iglesia #Esperanza #PadreCelestial #VolvéosALaFortaleza #PrisionerosDeEsperanza #Restauracion #FortahezaDeDios #Redentor #Chihuahua #Predica #Dios #Cristo #Sermon #Palabra' >> $GITHUB_OUTPUT
+              ;;
+            903)
+              echo "video_url=https://res.cloudinary.com/dr9dtabgq/video/upload/v1782110887/redentor/semana_jun22-28/alAwYjhvmqc/clip_903.mp4" >> $GITHUB_OUTPUT
+              echo 'caption=Tu cónyuge no piensa igual: es normal
+
+Aceptar que tu cónyuge piensa diferente no es el problema — el problema es no saber qué hacer con eso.
+
+📖 Mira la clase COMPLETA en YouTube ↓
+https://youtube.com/live/alAwYjhvmqc
+
+#matrimoniocristiano #escueladominical #vidaenpareja #relacionessanas #iglesia #consejeria #reflexioncristiana #VolvéosALaFortaleza #PrisionerosDeEsperanza #Restauracion #FortahezaDeDios #Redentor #Chihuahua #Iglesia #Fe #Predica #Dios #Cristo' >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Publish Reel to Instagram
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          IG_ACCOUNT_ID: "17841456697845516"
+        run: |
+          VIDEO_URL="${{ steps.clip.outputs.video_url }}"
+          CAPTION="${{ steps.clip.outputs.caption }}"
+          NUM="${{ steps.clip.outputs.num }}"
+
+          echo "📤 Creando container IG para clip $NUM..."
+          CONTAINER=$(curl -s -X POST \
+            "https://graph.facebook.com/v19.0/${IG_ACCOUNT_ID}/media" \
+            -d "media_type=REELS" \
+            --data-urlencode "video_url=${VIDEO_URL}" \
+            --data-urlencode "caption=${CAPTION}" \
+            -d "share_to_feed=true" \
+            --data-urlencode "access_token=${META_ACCESS_TOKEN}")
+
+          echo "Container response: $CONTAINER"
+          CONTAINER_ID=$(echo "$CONTAINER" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
+
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "❌ Error creando container"
+            exit 1
+          fi
+
+          echo "Container ID: $CONTAINER_ID"
+          echo "⏳ Esperando procesamiento..."
+
+          for i in $(seq 1 18); do
+            sleep 10
+            STATUS_RESP=$(curl -s "https://graph.facebook.com/v19.0/${CONTAINER_ID}?fields=status_code,status&access_token=${META_ACCESS_TOKEN}")
+            STATUS=$(echo "$STATUS_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status_code', d.get('status','')))")
+            echo "[$i/18] Status: $STATUS"
+            if [ "$STATUS" = "FINISHED" ]; then
+              break
+            fi
+            if [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "EXPIRED" ]; then
+              echo "❌ Error en procesamiento: $STATUS_RESP"
+              exit 1
+            fi
+          done
+
+          echo "📣 Publicando reel..."
+          PUB=$(curl -s -X POST \
+            "https://graph.facebook.com/v19.0/${IG_ACCOUNT_ID}/media_publish" \
+            --data-urlencode "creation_id=${CONTAINER_ID}" \
+            --data-urlencode "access_token=${META_ACCESS_TOKEN}")
+
+          echo "Publish response: $PUB"
+          REEL_ID=$(echo "$PUB" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
+
+          if [ -n "$REEL_ID" ]; then
+            echo "✅ Reel $NUM publicado en Instagram: $REEL_ID"
+          else
+            echo "❌ Error publicando"
+            exit 1
+          fi
