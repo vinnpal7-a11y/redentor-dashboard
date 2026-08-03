@@ -637,8 +637,11 @@ function saveStats(){
 // Antes esto salía de localStorage y había que teclearlo a mano cada semana,
 // por eso las gráficas de crecimiento estaban vacías.
 function getSnapshots(){
-  if(typeof LIVE_HISTORY!=='undefined' && Array.isArray(LIVE_HISTORY) && LIVE_HISTORY.length)
-    return LIVE_HISTORY;
+  // try/catch y no solo typeof: LIVE_HISTORY es un const, y acceder a un const antes de
+  // su inicializacion lanza ReferenceError aunque se use typeof (temporal dead zone).
+  try{
+    if(Array.isArray(LIVE_HISTORY) && LIVE_HISTORY.length) return LIVE_HISTORY;
+  }catch(e){}
   return [];
 }
 function getHistory(){
@@ -764,8 +767,9 @@ function renderRecommendations(){
 // ── Load live stats — usa LIVE_STATS inyectado por fetch_stats.py ────
 async function loadLiveStats(){
   try{
-    if(typeof LIVE_STATS==='undefined'||!LIVE_STATS){showStatsUnavailable();return;}
-    const s = LIVE_STATS;
+    let s=null;
+    try{ s = LIVE_STATS; }catch(e){ s = null; }   // const en TDZ lanza aunque uses typeof
+    if(!s){showStatsUnavailable();return;}
     const yt = s.youtube||{}, ig = s.instagram||{}, fb = s.facebook||{};
 
     // Header timestamp
@@ -838,10 +842,10 @@ function showStatsUnavailable(){
 }
 
 /* STATS_START */
-const LIVE_STATS = {"fetched_at": "2026-08-03T04:38:30.991139+00:00", "instagram": {"followers": 293, "media_count": 79, "reach": 801, "accounts_engaged": null, "total_interactions": null, "recent_likes": 81, "recent_comments": 0, "posts": [{"id": "18373093159237993", "media_type": "VIDEO", "timestamp": "2026-08-02T15:11:40+0000", "like_count": 13, "comments_count": 0}, {"id": "18093583541312226", "media_type": "VIDEO", "timestamp": "2026-08-01T20:00:40+0000", "like_count": 4, "comments_count": 0}, {"id": "18183075859406215", "media_type": "CAROUSEL_ALBUM", "timestamp": "2026-08-01T15:40:59+0000", "like_count": 7, "comments_count": 0}, {"id": "18128519392736301", "media_type": "VIDEO", "timestamp": "2026-07-31T15:04:46+0000", "like_count": 7, "comments_count": 0}, {"id": "18136397845595129", "media_type": "VIDEO", "timestamp": "2026-07-30T19:42:19+0000", "like_count": 4, "comments_count": 0}], "followers_delta": 0}, "facebook": {"fans": 7960, "followers": 7960, "engagements": 1177, "reach_unique": null, "page_views": 1177, "video_views": 6293, "posts": [], "fans_delta": 0}, "youtube": {"subscribers": 1080, "total_views": 168939, "shorts": [{"id": "3hXsirmUfeI", "title": "Antes de Abraham, Yo Soy #Shorts", "views": 0, "likes": 0}, {"id": "oGX6j5D4NOU", "title": "Y vosotros, ¿quién decís que soy yo? #Shorts", "views": 0, "likes": 0}, {"id": "lzK-6EDasNk", "title": "Usted tiene vida y no lo sabe #Shorts", "views": 0, "likes": 0}, {"id": "sGuBTTtKvSQ", "title": "Por eso oramos: hágase tu voluntad #Shorts", "views": 0, "likes": 0}, {"id": "3Czps_93q64", "title": "Los nativos vieron a Dios en su conducta #Shorts", "views": 0, "likes": 0}, {"id": "BdLPu9q0nB0", "title": "Lleno del Espíritu desde el vientre #Shorts", "views": 0, "likes": 0}], "shorts_total_views": 0, "shorts_total_likes": 0, "subs_delta": 0}};
+const LIVE_STATS = {"fetched_at": "2026-08-03T04:40:39.691221+00:00", "instagram": {"followers": 293, "media_count": 79, "reach": 801, "accounts_engaged": null, "total_interactions": null, "recent_likes": 81, "recent_comments": 0, "posts": [{"id": "18373093159237993", "media_type": "VIDEO", "timestamp": "2026-08-02T15:11:40+0000", "like_count": 13, "comments_count": 0}, {"id": "18093583541312226", "media_type": "VIDEO", "timestamp": "2026-08-01T20:00:40+0000", "like_count": 4, "comments_count": 0}, {"id": "18183075859406215", "media_type": "CAROUSEL_ALBUM", "timestamp": "2026-08-01T15:40:59+0000", "like_count": 7, "comments_count": 0}, {"id": "18128519392736301", "media_type": "VIDEO", "timestamp": "2026-07-31T15:04:46+0000", "like_count": 7, "comments_count": 0}, {"id": "18136397845595129", "media_type": "VIDEO", "timestamp": "2026-07-30T19:42:19+0000", "like_count": 4, "comments_count": 0}], "followers_delta": 4}, "facebook": {"fans": 7961, "followers": 7961, "engagements": 1177, "reach_unique": null, "page_views": 1177, "video_views": 6293, "posts": [], "fans_delta": 23}, "youtube": {"subscribers": 1080, "total_views": 168939, "shorts": [{"id": "3hXsirmUfeI", "title": "Antes de Abraham, Yo Soy #Shorts", "views": 0, "likes": 0}, {"id": "oGX6j5D4NOU", "title": "Y vosotros, ¿quién decís que soy yo? #Shorts", "views": 0, "likes": 0}, {"id": "lzK-6EDasNk", "title": "Usted tiene vida y no lo sabe #Shorts", "views": 0, "likes": 0}, {"id": "sGuBTTtKvSQ", "title": "Por eso oramos: hágase tu voluntad #Shorts", "views": 0, "likes": 0}, {"id": "3Czps_93q64", "title": "Los nativos vieron a Dios en su conducta #Shorts", "views": 0, "likes": 0}, {"id": "BdLPu9q0nB0", "title": "Lleno del Espíritu desde el vientre #Shorts", "views": 0, "likes": 0}], "shorts_total_views": 0, "shorts_total_likes": 0, "subs_delta": 10}};
 /* STATS_END */
 /* HISTORY_START */
-const LIVE_HISTORY = [{"date": "2026-06-01", "ig_followers": 259, "fb_fans": 7649, "yt_subs": 993, "yt_views": 125995, "shorts_views": 192, "shorts_likes": 6}, {"date": "2026-07-29", "ig_followers": 289, "fb_fans": 7938, "yt_subs": 1070, "yt_views": 165394, "shorts_views": 176, "shorts_likes": 8}, {"date": "2026-08-03", "ig_followers": 293, "fb_fans": 7960, "yt_subs": 1080, "yt_views": 168939, "shorts_views": 0, "shorts_likes": 0}];
+const LIVE_HISTORY = [{"date": "2026-06-01", "ig_followers": 259, "fb_fans": 7649, "yt_subs": 993, "yt_views": 125995, "shorts_views": 192, "shorts_likes": 6}, {"date": "2026-07-29", "ig_followers": 289, "fb_fans": 7938, "yt_subs": 1070, "yt_views": 165394, "shorts_views": 176, "shorts_likes": 8}, {"date": "2026-08-03", "ig_followers": 293, "fb_fans": 7961, "yt_subs": 1080, "yt_views": 168939, "shorts_views": 0, "shorts_likes": 0}];
 /* HISTORY_END */
 // Init stats on load
 document.getElementById('week-label').textContent=getWeekRange();
