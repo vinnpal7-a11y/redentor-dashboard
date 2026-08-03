@@ -486,6 +486,10 @@ function weekRangeLabel(mon){
 // ── Week selector (stats form) ────────────────────────────────────────
 function buildWeekSelector(){
   const sel=document.getElementById('week-selector');
+  // El formulario manual de captura se quitó del HTML, pero esta función seguía
+  // corriendo en el arranque: reventaba con "Cannot set properties of null" y ABORTABA
+  // todo el script, por eso las estadísticas nunca se pintaban.
+  if(!sel) return;
   sel.innerHTML='';
   const history=loadData('history',[]);
   const prevMon=getPrevMonday();
@@ -504,12 +508,15 @@ function buildWeekSelector(){
   loadWeekIntoForm(localDateStr(prevMon));
 }
 function updateStatsLabel(){
-  const wk=document.getElementById('week-selector').value;
+  const _sel=document.getElementById('week-selector');
+  const _lbl=document.getElementById('stats-week-label');
+  if(!_sel||!_lbl) return;
+  const wk=_sel.value;
   const p=wk.split('-');
   document.getElementById('stats-week-label').textContent=
     'Semana: '+weekRangeLabel(new Date(+p[0],+p[1]-1,+p[2]));
 }
-function onWeekChange(){updateStatsLabel();loadWeekIntoForm(document.getElementById('week-selector').value)}
+function onWeekChange(){const e=document.getElementById('week-selector');if(!e)return;updateStatsLabel();loadWeekIntoForm(e.value)}
 function loadWeekIntoForm(wk){
   const e=loadData('history',[]).find(h=>h.week===wk)||{};
   const map={ig_followers:'ig-followers',fb_fans:'fb-fans',yt_subs:'yt-subs',reel_views:'reel-views',
@@ -518,9 +525,15 @@ function loadWeekIntoForm(wk){
 }
 
 // ── Init ─────────────────────────────────────────────────────────────
-document.getElementById('week-label').textContent=getWeekRange()
-document.getElementById('last-updated').textContent=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})
-buildCalendar(); buildSchedule(); buildChecklist(); buildWeekSelector()
+// Cada paso aislado: si uno falla, los demás siguen. Un solo getElementById nulo
+// ya tumbó dos veces la sección de estadísticas completa.
+function initPaso(nombre, fn){ try{ fn(); }catch(e){ console.error('init '+nombre+':', e); } }
+initPaso('week-label', ()=>{document.getElementById('week-label').textContent=getWeekRange()});
+initPaso('last-updated', ()=>{document.getElementById('last-updated').textContent=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})});
+initPaso('calendar', buildCalendar);
+initPaso('schedule', buildSchedule);
+initPaso('checklist', buildChecklist);
+initPaso('weekSelector', buildWeekSelector);
 
 // ── Calendar ─────────────────────────────────────────────────────────
 function buildCalendar(){
